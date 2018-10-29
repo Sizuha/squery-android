@@ -190,7 +190,7 @@ class Anime() : ISQueryRow {
 
     @Column("start_date")
     @DateType(pattern = "yyyyMM")
-    private var startDateRaw: Int = 0
+    var startDate: Int = 0
 
     var media = MediaType.NONE
 
@@ -252,10 +252,8 @@ db.from(Anime()).create(true) // true = IF NOT EXISTS
 db.createTable(Anime())
 ```
 
-## Delete Table
+## Delete
 ```kotlin
-val db = SQuery(this, "anime.db", DB_VER /* 1 */ )
-
 // SQL: DROP TABLE anime;
 db.from(Anime()).drop()
 
@@ -266,9 +264,71 @@ db.from(Anime()).delete()
 db.from(Anime()).where("start_date < ?", 200001).delete()
 ```
 
-## Insert/Update
+## Insert
+```kotlin
+val row = Anime().apply { 
+    title = "Test Title"
+    titleOther = "this is a sample"
+    finished = false
+    media = MediaType.MOVIE
+    progress = 1f
+    total = 1
+    startDate = 20181001
+}
+db.from(row).insert()
 
+// 又は
+db.from(Anime()).values(row).insert()
 
+// 又は
+val data = ContentValues().apply { 
+    put("title", "Test Title")
+    put("title_other", "this is a sample")
+    put("fin", false)
+    // . . .
+}
+db.from(Anime()).values(data).insert()
+```
+AUTOINCREMENTのフィルドは自動で外される。
+
+## Update
+```kotlin
+/*
+ * SQL> UPDATE FROM anime SET title = 'Test Title', ... WHERE idx = ?;
+ */
+val row = Anime().apply { 
+    // . . .
+}
+db.from(row).update()
+
+// 又は
+db.from(Anime()).values(row).update()
+
+// 又は
+val data = ContentValues().apply { 
+    // . . .
+}
+db.from(Anime()).values(data).update()
+```
+where()を省略した場合、自動でWHERE句を追加します。この場合、主キー(Primary Key)を使ってWHERE句を作成します。
+自動でWHERE句を作成したくない場合は、```update(false)```のように使えます。
+
+## Insert or Update
+```insert()```を試して失敗したら```update()```を試します。
+
+```kotlin
+val row = Anime().apply { 
+    // . . .
+}
+db.from(row).insertOrUpdate()
+
+// 又は
+db.from(row).where("idx = ?", row.idx).insertOrUpdate()
+
+// 又は
+db.from(Anime()).values(row).where("idx = ?", row.idx).insertOrUpdate()
+
+```
 
 ## Select
 
