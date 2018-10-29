@@ -156,6 +156,23 @@ var dateField: Calendar? = null
 ```
 
 ### テーブルの定義の例
+```sql
+CREATE TABLE anime (
+    idx INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    title_other TEXT,
+    start_date INTEGER,
+    media INTEGER,
+    progress INTEGER,
+    total INTEGER,
+    fin INTEGER,
+    rating INTEGER,
+    memo TEXT,
+    link TEXT,
+    img_path TEXT,
+    removed INTEGER
+);
+```
 ```kotlin
 class Anime() : ISQueryRow {
     override val tableName: String
@@ -227,3 +244,31 @@ class Anime() : ISQueryRow {
 ```
 
 ## Create Table
+```kotlin
+val db = SQuery(this, "anime.db", DB_VER /* 1 */ )
+
+db.from(Anime()).create(true) // true = IF NOT EXISTS
+// 又は
+db.createTable(Anime())
+```
+
+## Delete Table
+```kotlin
+val db = SQuery(this, "anime.db", DB_VER /* 1 */ )
+
+// SQL: DROP TABLE anime;
+db.from(Anime()).drop()
+
+// SQL: DELETE FROM anime;
+db.from(Anime()).delete()
+
+// SQL: DELETE FROM anime WHERE start_date < 200001;
+db.from(Anime()).where("start_date < ?", 200001).delete()
+```
+
+## Insert/Update
+
+
+
+## Select
+
