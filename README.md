@@ -2,13 +2,18 @@
 Simple Query Library for SQLite (Android/Kotlin)
 
 開発中...
+Now Developing
+
+* 最新Version: 1.0.4
+* 注意：開発中のライブラリーなので、まだ充分なテストができていません。
+
 
 ## build.gradle (App)
 ~~~
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.1@aar'
+    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.4@aar'
     // . . .
 }
 ~~~
@@ -38,15 +43,120 @@ class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context,
 }
 ```
 
-## Create TABLE
+## Tableの定義
+SQueryでは、Tableの定義と行(row)データの扱いに「ISQueryRow」 interfaceを使います。
 
-### Table classの定義
+ISQueryRowを具現し、テーブル名を指定します。
 ```kotlin
-import com.kishe.sizuha.kotlin.squery.Column
-import com.kishe.sizuha.kotlin.squery.DateType
-import com.kishe.sizuha.kotlin.squery.ISQueryRow
-import com.kishe.sizuha.kotlin.squery.PrimaryKey
+class SampleTable : ISQueryRow {    
+    override val tableName: String
+        get() = "テーブル名"
+}
+```
 
+次は各フィルド(column)を定義します。フィルド名、キー、Not Nullなどを「@Column」annotationで定義します。
+```kotlin
+@Column("フィルド名", notNull=false, unique=false, orderByAsc=true)
+var fieldVar: kotlinDataType
+```
+@Column」はクラスのメンバー変数とプロパティ(property)に付けられます。
+
+使えるデータの型(kotlin data types)：
+* Int (INTEGER)
+* Long (INTEGER)
+* Boolean (INTEGER)
+* Float (REAL)
+* Double (REAL)
+* String (TEXT)
+* ByteArray (BLOB) ※ CREATE TABLEのみ
+* Date (TEXT) ※ @DateType又は@TimeStampと一緒で
+* Calendar (TEXT) ※ @DateType又は@TimeStampと一緒で
+
+例)
+```kotlin
+class SampleTable : ISQueryRow {    
+    override val tableName: String
+        get() = "sample"
+
+    // name TEXT NOT NULL
+    @Column("name", notNull = true)
+    var userName: String = ""
+    
+    // age INTEGER NOT NULL
+    @Column("age", notNull = true)
+    var age: Int = 0
+    
+    // email TEXT
+    @Column("email")
+    var email: String? = null    
+}
+```
+
+### Primary Key(主キー)
+```kotlin
+@PrimaryKey(seq=1, autoInc=false)
+```
+@Columnを付けたフィルドに「@PrimaryKey」を付ける。
+autoInc=trueの場合、AUTOINCREMENTフィルド(INTEGER型)になる
+
+例）
+```kotlin
+// idx INTEGER PRIMARY KEY AUTOINCREMENT
+@Column("idx")
+@PrimaryKey(autoInc=true)
+private var idx = 0
+
+/*** 複数の主キー
+ * CREATE TABLE ... (first INTEGER NOT NULL, second INTEGER NOT NULL, PRIMARY KEY(first, second));
+ */
+@Column("first", notNull=true)
+@PrimaryKey(1)
+var first = 0
+
+@Column("second", notNull=true)
+@PrimaryKey(2)
+var second = 0
+```
+
+### 日付、時間フィルド
+#### TEXT(DB) to Date(Kotlin)
+```kotlin
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+var dateField: Date? = null
+```
+#### TEXT to Calendar
+```kotlin
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+var dateField: Calendar? = null
+```
+#### TEXT to Int
+```kotlin
+@DateType("yyyyMMdd", timezone="")
+var dateField: Int = 0 // yyyyMMdd ex) "20021231" -> 20021231
+```
+#### TEXT to Long(time stamp)
+```kotlin
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+var dateField: Long = 0
+```
+#### Timestamp(INTEGER) to Long
+```kotlin
+@TimeStamp(timezone="")
+var dateField: Long = 0
+```
+#### Timestamp(INTEGER) to Date
+```kotlin
+@TimeStamp(timezone="")
+var dateField: Date? = null
+```
+#### Timestamp(INTEGER) to Calendar
+```kotlin
+@TimeStamp(timezone="")
+var dateField: Calendar? = null
+```
+
+### テーブルの定義の例
+```kotlin
 class Anime() : ISQueryRow {
     override val tableName: String
         get() = "anime"
@@ -71,7 +181,7 @@ class Anime() : ISQueryRow {
     private var mediaRaw: Int
         get() = media.rawValue
         set(value) {
-            MediaType.values().first { it.rawValue == value }
+            media = MediaType.values().first { it.rawValue == value }
         }
 
     fun getMediaText(): String = when (media) {
@@ -115,3 +225,5 @@ class Anime() : ISQueryRow {
     var removed = false
 }
 ```
+
+## Create Table
