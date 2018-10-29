@@ -358,5 +358,5 @@ val rows = db.from(Anime())
     .limit(1)
     .select { Anime() } // return: MutableList<Anime>
 // 又は
-val row = db.from(Anime()).where("idx=?",100).selectOne { Anime() } // return: Anime
+val row = db.from(Anime()).where("idx=?",100).selectOne { Anime() } // return: Anime or null
 ```
