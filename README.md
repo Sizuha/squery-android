@@ -44,9 +44,9 @@ class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context,
 ```
 
 ## Tableの定義
-SQueryでは、Tableの定義と行(row)データの扱いに「ISQueryRow」 interfaceを使います。
+SQueryでは、Tableの定義と行(row)データの扱いに「ISQueryRow」 interfaceを使う。
 
-ISQueryRowを具現し、テーブル名を指定します。
+ISQueryRowを具現し、テーブル名を指定する。
 ```kotlin
 class SampleTable : ISQueryRow {    
     override val tableName: String
@@ -54,12 +54,12 @@ class SampleTable : ISQueryRow {
 }
 ```
 
-次は各フィルド(column)を定義します。フィルド名、キー、Not Nullなどを「@Column」annotationで定義します。
+次は各フィルド(column)を定義する。フィルド名、キー、Not Nullなどを「@Column」annotationで定義する。
 ```kotlin
 @Column("フィルド名", notNull=false, unique=false, orderByAsc=true)
 var fieldVar: kotlinDataType
 ```
-@Column」はクラスのメンバー変数とプロパティ(property)に付けられます。
+「@Column」はクラスのメンバー変数とプロパティ(property)に付ける。
 
 使えるデータの型(kotlin data types)：
 * Int (INTEGER)
@@ -310,11 +310,11 @@ val data = ContentValues().apply {
 }
 db.from(Anime()).values(data).update()
 ```
-where()を省略した場合、自動でWHERE句を追加します。この場合、主キー(Primary Key)を使ってWHERE句を作成します。
-自動でWHERE句を作成したくない場合は、```update(false)```のように使えます。
+where()を省略した場合、自動でWHERE句を追加します。この場合、主キー(Primary Key)を使ってWHERE句を作成する。
+自動でWHERE句を作成したくない場合は、```update(false)```のように使える。
 
 ## Insert or Update
-```insert()```を試して失敗したら```update()```を試します。
+```insert()```を試して失敗したら```update()```を試す。
 
 ```kotlin
 val row = Anime().apply { 
