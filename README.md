@@ -107,7 +107,7 @@ autoInc=trueの場合、AUTOINCREMENTフィルド(INTEGER型)になる
 private var idx = 0
 
 /*** 複数の主キー
- * CREATE TABLE ... (first INTEGER NOT NULL, second INTEGER NOT NULL, PRIMARY KEY(first, second));
+ * SQL> CREATE TABLE ... (first INTEGER NOT NULL, second INTEGER NOT NULL, PRIMARY KEY(first, second));
  */
 @Column("first", notNull=true)
 @PrimaryKey(1)
@@ -186,15 +186,15 @@ class Anime() : ISQueryRow {
     var title = ""
 
     @Column("title_other")
-    var titleOther = ""
+    var titleOther: String? = null
 
-    @Column("start_date")
+    @Column("start_date", notNull=true)
     @DateType(pattern = "yyyyMM")
     var startDate: Int = 0
 
     var media = MediaType.NONE
 
-    @Column("media")
+    @Column("media", notNull=true)
     private var mediaRaw: Int
         get() = media.rawValue
         set(value) {
@@ -210,35 +210,35 @@ class Anime() : ISQueryRow {
 
     var progress: Float = 0f
 
-    @Column("progress")
+    @Column("progress", notNull=true)
     private var progressRaw: Int
         get() = (progress*10f).toInt()
         set(value) {
             progress = value / 10f
         }
 
-    @Column("total")
+    @Column("total", notNull=true)
     var total = 0
 
-    @Column("fin")
+    @Column("fin", notNull=true)
     var finished = false
 
-    @Column("rating")
+    @Column("rating", notNull=true)
     var rating = 0 // 0 ~ 100
 
     val ratingAsFloat: Float
         get() = rating / 100f
 
     @Column("memo")
-    var memo = ""
+    var memo: String? = null
 
     @Column("link")
-    var link = ""
+    var link: String? = null
 
     @Column("img_path")
-    var imagePath = ""
+    var imagePath: String? = null
 
-    @Column("removed")
+    @Column("removed", notNull=true)
     var removed = false
 }
 ```
@@ -254,13 +254,13 @@ db.createTable(Anime())
 
 ## Delete
 ```kotlin
-// SQL: DROP TABLE anime;
+// SQL> DROP TABLE anime;
 db.from(Anime()).drop()
 
-// SQL: DELETE FROM anime;
+// SQL> DELETE FROM anime;
 db.from(Anime()).delete()
 
-// SQL: DELETE FROM anime WHERE start_date < 200001;
+// SQL> DELETE FROM anime WHERE start_date < 200001;
 db.from(Anime()).where("start_date < ?", 200001).delete()
 ```
 
@@ -327,8 +327,29 @@ db.from(row).where("idx = ?", row.idx).insertOrUpdate()
 
 // 又は
 db.from(Anime()).values(row).where("idx = ?", row.idx).insertOrUpdate()
-
 ```
 
 ## Select
+```kotlin
+// SQL> SELECT * FROM anime;
+val rows = db.from(Anime()).select { Anime() } // return: MutableList<Anime>
 
+// SQL> SELECT * FROM anime WHERE fin=1;
+val rows = db.from(Anime()).where("fin=?",1).select { Anime() } // return: MutableList<Anime>
+
+// SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title;
+val rows = db.from(Anime())
+    .where("fin=?",1)
+    .orderBy("start_date", false)
+    .orderBy("title")
+    .select { Anime() } // return: MutableList<Anime>
+
+// SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title LIMIT 0,10;
+val rows = db.from(Anime())
+    .where("fin=?",1)
+    .orderBy("start_date", false)
+    .orderBy("title")
+    .limit(10,0)
+    .select { Anime() } // return: MutableList<Anime>
+
+```
