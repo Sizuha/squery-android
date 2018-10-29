@@ -57,8 +57,8 @@ class SampleTable : ISQueryRow {
 
 次は各フィルド(column)を定義します。フィルド名、キー、Not Nullなどを「@Column」annotationで定義します。
 ```kotlin
-    @Column("フィルド名", notNull=false, unique=false, orderByAsc=true)
-    var fieldVar: kotlinDataType
+@Column("フィルド名", notNull=false, unique=false, orderByAsc=true)
+var fieldVar: kotlinDataType
 ```
 @Column」はクラスのメンバー変数とプロパティ(property)に付けられます。
 
@@ -70,8 +70,8 @@ class SampleTable : ISQueryRow {
 * Double (REAL)
 * String (TEXT)
 * ByteArray (BLOB) ※ CREATE TABLEのみ
-* Date (TEXT)
-* Calendar (TEXT)
+* Date (TEXT) ※ @DateType又は@TimeStampと一緒で
+* Calendar (TEXT) ※ @DateType又は@TimeStampと一緒で
 
 例)
 ```kotlin
@@ -91,6 +91,54 @@ class SampleTable : ISQueryRow {
     @Column("email")
     var email: String? = null    
 }
+```
+
+#### Primary Key(主キー)
+```kotlin
+@PrimaryKey(seq=1, autoInc=false)
+```
+@Columnを付けたフィルドに「@PrimaryKey」を付ける。
+autoInc=trueの場合、AUTOINCREMENTフィルド(INTEGER型)になる
+
+例）
+```kotlin
+// idx INTEGER PRIMARY KEY AUTOINCREMENT
+@Column("idx")
+@PrimaryKey(autoInc=true)
+private var idx = 0
+
+/*** 複数の主キー
+ * CREATE TABLE ... (first INTEGER NOT NULL, second INTEGER NOT NULL, PRIMARY KEY(first, second));
+ */
+@Column("first", notNull=true)
+@PrimaryKey(1)
+var first = 0
+
+@Column("second", notNull=true)
+@PrimaryKey(2)
+var second = 0
+```
+
+#### 日付、時間フィルド
+##### TEXT(DB) to Date(Kotlin)
+```kotlin
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+var dateField: Date? = null
+```
+##### TEXT to Calendar
+```kotlin
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+var dateField: Calendar? = null
+```
+##### TEXT to Int
+```kotlin
+@DateType("yyyyMMdd", timezone="")
+var dateField: Int = 0 // yyyyMMdd ex) "20021231" -> 20021231
+```
+##### TEXT to Long(time stamp)
+```kotlin
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+var dateField: Long = 0
 ```
 
 #### テーブルの定義の例
@@ -119,7 +167,7 @@ class Anime() : ISQueryRow {
     private var mediaRaw: Int
         get() = media.rawValue
         set(value) {
-            MediaType.values().first { it.rawValue == value }
+            media = MediaType.values().first { it.rawValue == value }
         }
 
     fun getMediaText(): String = when (media) {
