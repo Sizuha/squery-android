@@ -352,4 +352,11 @@ val rows = db.from(Anime())
     .limit(10,0)
     .select { Anime() } // return: MutableList<Anime>
 
+// SQL> SELECT * FROM anime WHERE idx=100 LIMIT 1;
+val rows = db.from(Anime())
+    .where("idx=?",100)
+    .limit(1)
+    .select { Anime() } // return: MutableList<Anime>
+// 又は
+val row = db.from(Anime()).where("idx=?",100).selectOne { Anime() } // return: Anime
 ```
