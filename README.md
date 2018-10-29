@@ -310,7 +310,7 @@ val data = ContentValues().apply {
 }
 db.from(Anime()).values(data).update()
 ```
-where()を省略した場合、自動でWHERE句を追加します。この場合、主キー(Primary Key)を使ってWHERE句を作成する。
+where()を省略した場合、自動でWHERE句が追加される。この場合、主キー(Primary Key)を使ってWHERE句を作成する。
 自動でWHERE句を作成したくない場合は、```update(false)```のように使える。
 
 ## Insert or Update
