@@ -43,10 +43,9 @@ class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context,
 }
 ```
 
-## Create TABLE
+## Tableの定義
 SQueryでは、Tableの定義と行(row)データの扱いに「ISQueryRow」 interfaceを使います。
 
-### Table classの定義
 ISQueryRowを具現し、テーブル名を指定します。
 ```kotlin
 class SampleTable : ISQueryRow {    
@@ -93,7 +92,7 @@ class SampleTable : ISQueryRow {
 }
 ```
 
-#### Primary Key(主キー)
+### Primary Key(主キー)
 ```kotlin
 @PrimaryKey(seq=1, autoInc=false)
 ```
@@ -119,29 +118,44 @@ var first = 0
 var second = 0
 ```
 
-#### 日付、時間フィルド
-##### TEXT(DB) to Date(Kotlin)
+### 日付、時間フィルド
+#### TEXT(DB) to Date(Kotlin)
 ```kotlin
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Date? = null
 ```
-##### TEXT to Calendar
+#### TEXT to Calendar
 ```kotlin
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Calendar? = null
 ```
-##### TEXT to Int
+#### TEXT to Int
 ```kotlin
 @DateType("yyyyMMdd", timezone="")
 var dateField: Int = 0 // yyyyMMdd ex) "20021231" -> 20021231
 ```
-##### TEXT to Long(time stamp)
+#### TEXT to Long(time stamp)
 ```kotlin
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Long = 0
 ```
+#### Timestamp(INTEGER) to Long
+```kotlin
+@TimeStamp(timezone="")
+var dateField: Long = 0
+```
+#### Timestamp(INTEGER) to Date
+```kotlin
+@TimeStamp(timezone="")
+var dateField: Date? = null
+```
+#### Timestamp(INTEGER) to Calendar
+```kotlin
+@TimeStamp(timezone="")
+var dateField: Calendar? = null
+```
 
-#### テーブルの定義の例
+### テーブルの定義の例
 ```kotlin
 class Anime() : ISQueryRow {
     override val tableName: String
@@ -211,3 +225,5 @@ class Anime() : ISQueryRow {
     var removed = false
 }
 ```
+
+## Create Table
