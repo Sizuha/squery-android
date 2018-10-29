@@ -1,6 +1,7 @@
 package com.kishe.sizuha.kotlin.squery
 
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.io.Closeable
@@ -20,6 +21,14 @@ open class SQuery(context: Context, dbName: String, version: Int)
 
     fun createTable(table: ISQueryRow) {
         from(table).create()
+    }
+
+    fun rawQuery(sql: String, args: Array<out String>): Cursor? {
+        return readableDatabase.rawQuery(sql, args)
+    }
+
+    fun execute(sql: String, args: Array<out String>) {
+        writableDatabase.execSQL(sql, args)
     }
 
 //    override fun close() {

@@ -379,10 +379,6 @@ class TableQuery(
         return cur
     }
 
-    fun rawQuery(sql: String, args: Array<out String>): Cursor? {
-        return db.rawQuery(sql, args)
-    }
-
     private fun findMemberInClass(tableObj: ISQueryRow, fieldName: String) =
         tableObj::class.memberProperties.firstOrNull {
             it.annotations.find { a -> a is Column && a.name == fieldName } != null
