@@ -1,4 +1,4 @@
-package sizuha.library.slib.squery;
+package com.kishe.sizuha.kotlin.squery;
 
 import org.junit.Test;
 

@@ -9,7 +9,7 @@ annotation class Column(
 )
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
-annotation class PrimaryKey(val autoInc: Boolean = false)
+annotation class PrimaryKey(val seq: Int = 1, val autoInc: Boolean = false)
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
 annotation class DateType(

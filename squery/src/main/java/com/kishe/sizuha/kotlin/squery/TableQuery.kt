@@ -91,13 +91,15 @@ class TableQuery(
 
     fun getKeyFields(): List<Column> {
         val result = mutableListOf<Column>()
-        for (member in table::class.memberProperties) {
-            member.findAnnotation<PrimaryKey>()?.let { _ ->
-                member.findAnnotation<Column>()?.let { column ->
-                    result.add(column)
-                }
-            }
+
+        table::class.memberProperties.filter {
+            it.annotations.firstOrNull { a -> a is PrimaryKey } != null
+        }.sortedBy {
+            it.findAnnotation<PrimaryKey>()?.seq ?: 1
+        }.forEach {
+            it.findAnnotation<Column>()?.let { column -> result.add(column) }
         }
+
         return result
     }
 
@@ -418,13 +420,13 @@ class TableQuery(
                         Int::class.javaObjectType
                         -> str.toIntOrNull()
 
-                        // "yyyyMMddhhmmss" -> Long or Timestamp
+                        // "yyyyMMddhhmmss" -> Timestap(Long)
                         Long::class.createType(),
                         Long::class.javaPrimitiveType,
                         Long::class.javaObjectType
                         -> date.time
 
-                        else -> str.toLongOrNull() ?: date.time
+                        else -> str
                     }
                     break@loop
                 }
