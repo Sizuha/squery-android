@@ -3,6 +3,7 @@ package com.kishe.sizuha.kotlin.squery
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.reflect.KMutableProperty
@@ -642,19 +643,36 @@ class TableQuery(
 
     // insert
     fun insert(): Boolean {
+        printLog("try: INSERT")
+
         if (sqlValues == null) values(table)
 
-        val autoIncKey = table::class.annotations.firstOrNull {
-            it is PrimaryKey && it.autoInc
-        } as? Column
-
-        autoIncKey?.let { a ->
-            sqlValues?.valueSet()?.removeAll {
-                it.key == a.name /*|| "$tableName.${it.key}" == "$tableName.${a.name}"*/
+        table::class.memberProperties.firstOrNull {
+            it.annotations.firstOrNull { a -> a is PrimaryKey && a.autoInc } != null
+        }?.let {
+            val column = it.annotations.firstOrNull { a -> a is Column } as? Column
+            if (column != null) {
+                val colName = column.name
+                printLog("try remove key: $colName")
+                sqlValues?.valueSet()?.removeAll { v ->
+                    v.key == colName /*|| "$tableName.${v.key}" == "$tableName.$colName"*/
+                }
             }
         }
 
+        if (Config.enableDebugLog) {
+            printValues()
+        }
+
         return db.insert(tableName, null, sqlValues) > 0
+    }
+
+    private fun printValues() {
+        Log.d(LOG_TAG, "===values===")
+        sqlValues?.valueSet()?.forEach {
+            Log.d(LOG_TAG, "  ${it.key} => ${it.value}")
+        }
+        Log.d(LOG_TAG, "===END===")
     }
 
     fun insert(row: ISQueryRow): Boolean {
@@ -669,6 +687,8 @@ class TableQuery(
 
     // update
     fun update(autoMakeWhere: Boolean = true): Int {
+        printLog("try: UPDATE")
+
         val keys = getKeyFields().map { it.name }
         if (sqlValues == null) values(table)
 
@@ -686,6 +706,11 @@ class TableQuery(
 
         sqlValues?.valueSet()?.removeAll {
             keys.contains(it.key) /*|| keys.contains("$tableName.${it.key}")*/
+        }
+
+        if (Config.enableDebugLog) {
+            printLog("where: $sqlWhere")
+            printValues()
         }
 
         return db.update(tableName, sqlValues, sqlWhere, sqlWhereArgs.toTypedArray())
