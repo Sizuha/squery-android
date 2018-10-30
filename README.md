@@ -384,23 +384,26 @@ val cursor = db.from(Anime()).where("fin=?",0).selectAsCursor("title","progress"
 ### 手動でCursorからオブジェクトに変換
 ```kotlin
 // SQL> SELECT title, progress, total FROM anime WHERE fin=0;
-val rows = db.from(Anime()).columns("title","progress","total").where("fin=?",0).selectWithCursor { cursor -> 
-    Anime().let { row ->
-        cursor.run {
-            var i: Int
+val rows = db.from(Anime())
+    .columns("title","progress","total")
+    .where("fin=?",0)
+    .selectWithCursor { cursor -> 
+        Anime().let { row ->
+            cursor.run {
+                var i: Int
 
-            i = getColumnIndex("title")
-            row.title = getString(i)
+                i = getColumnIndex("title")
+                row.title = getString(i)
 
-            i = getColumnIndex("progress")
-            row.progress = getInt(i) / 10f
+                i = getColumnIndex("progress")
+                row.progress = getInt(i) / 10f
 
-            i = getColumnIndex("total")
-            row.total = getInt(i)
+                i = getColumnIndex("total")
+                row.total = getInt(i)
+            }
+            row // return (※ 返すオブジェクトはISqueryRow型でなくても大丈夫)
         }
-        row // return (※ 返すオブジェクトはISqueryRow型でなくても大丈夫)
-    }
-} // return: MutableList<Anime>
+    } // return: MutableList<Anime>
 ```
 
 ### ForEach
