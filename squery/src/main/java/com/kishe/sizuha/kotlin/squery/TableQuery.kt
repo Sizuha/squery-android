@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.prefs.PreferencesFactory
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.createType
@@ -13,11 +14,12 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 
-class TableQuery(
-    private val db: SQLiteDatabase,
-    private val table: ISQueryRow)
+class TableQuery
 {
-    private val tableName: String = table.tableName
+    private val db: SQLiteDatabase
+    private val table: ISQueryRow
+    private val tableName: String
+    //private var factory: (()->ISQueryRow)? = null
 
     // WHERE
     private var sqlWhere: String? = null
@@ -46,6 +48,19 @@ class TableQuery(
     private var sqlJoinTables = mutableListOf<String>()
     private var sqlJoinOn: String = ""
     private var sqlJoinOnArgs = mutableListOf<String>()
+
+    constructor(db: SQLiteDatabase, table: ISQueryRow) {
+        this.db = db
+        this.table = table
+        tableName = table.tableName
+    }
+
+//    constructor(db: SQLiteDatabase, factory: ()->ISQueryRow) {
+//        this.db = db
+//        this.table = factory()
+//        tableName = table.tableName
+//        this.factory = factory
+//    }
 
 
     fun reset(): TableQuery {
@@ -495,6 +510,12 @@ class TableQuery(
         member.isAccessible = accessible
     }
 
+//    fun <T: ISQueryRow> select(): MutableList<T> {
+//        return selectWithCursor { cursor ->
+//            convertFromCursor(cursor, factory!!) as T
+//        }
+//    }
+
     fun <T: ISQueryRow> select(factory: ()->T): MutableList<T> {
         return selectWithCursor { cur -> convertFromCursor(cur, factory) }
     }
@@ -513,7 +534,7 @@ class TableQuery(
         return row
     }
 
-    fun <T: ISQueryRow> selectWithCursor(factory: (cursor: Cursor)->T): MutableList<T> {
+    fun <T> selectWithCursor(factory: (cursor: Cursor)->T): MutableList<T> {
         val rows = mutableListOf<T>()
 
         return selectAsCursor().use { cur ->
@@ -532,7 +553,7 @@ class TableQuery(
         return null
     }
 
-    fun <T: ISQueryRow> selectOne(factory: (cursor: Cursor)->T): T? {
+    fun <T> selectOne(factory: (cursor: Cursor)->T): T? {
         limit(1)
         return selectWithCursor { cur -> factory(cur) }.firstOrNull()
     }
