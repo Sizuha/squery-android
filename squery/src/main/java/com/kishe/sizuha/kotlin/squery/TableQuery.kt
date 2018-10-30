@@ -283,6 +283,28 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return buff.toString()
     }
 
+    fun innerJoin(tables: List<String>, joinOn: String, args: List<String>) {
+        join(JoinType.INNER, tables, joinOn, args)
+    }
+    fun leftOuterJoin(tables: List<String>, joinOn: String, args: List<String>) {
+        join(JoinType.LEFT_OUTER, tables, joinOn, args)
+    }
+    fun crossJoin(tables: List<String>, joinOn: String, args: List<String>) {
+        join(JoinType.CROSS, tables, joinOn, args)
+    }
+
+    private fun join(joinType: JoinType, tables: List<String>, joinOn: String, args: List<String>) {
+        sqlJoinType = joinType
+
+        sqlJoinTables.clear()
+        sqlJoinTables.addAll(tables)
+
+        sqlJoinOn = joinOn
+
+        sqlJoinOnArgs.clear()
+        sqlJoinOnArgs.addAll(args)
+    }
+
     fun selectAsCursor(vararg cols: String): Cursor? {
         if (cols.isNotEmpty()) columns(*cols)
 
