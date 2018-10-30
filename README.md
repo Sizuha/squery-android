@@ -4,7 +4,7 @@ Simple Query Library for SQLite (Android/Kotlin)
 開発中...
 Now Developing
 
-* 最新Version: 1.0.5
+* 最新Version: 1.0.7
 * 注意：開発中のライブラリーなので、まだ充分なテストができていません。
 
 
@@ -13,7 +13,7 @@ Now Developing
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.5@aar'
+    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.7@aar'
     // . . .
 }
 ~~~
@@ -75,8 +75,12 @@ var fieldVar: kotlinDataType
 例)
 ```kotlin
 class SampleTable : ISQueryRow {    
+    // DB上のテーブル名
     override val tableName: String
         get() = "sample"
+        
+    // 空の自分Typeのオブジェクトを返す
+    override fun createEmptyRow() = SampleTable()
 
     // name TEXT NOT NULL
     @Column("name", notNull = true)
@@ -177,6 +181,8 @@ CREATE TABLE anime (
 class Anime() : ISQueryRow {
     override val tableName: String
         get() = "anime"
+        
+    override fun createEmptyRow() = Anime()
 
     @Column("idx")
     @PrimaryKey(autoInc = true)
@@ -332,17 +338,17 @@ db.from(Anime()).values(row).where("idx = ?", row.idx).insertOrUpdate()
 ## Select
 ```kotlin
 // SQL> SELECT * FROM anime;
-val rows = db.from(Anime()).select { Anime() } // return: MutableList<Anime>
+val rows = db.from(Anime()).select() // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1;
-val rows = db.from(Anime()).where("fin=?",1).select { Anime() } // return: MutableList<Anime>
+val rows = db.from(Anime()).where("fin=?",1).select() // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title;
 val rows = db.from(Anime())
     .where("fin=?",1)
     .orderBy("start_date", false)
     .orderBy("title")
-    .select { Anime() } // return: MutableList<Anime>
+    .select() // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title LIMIT 0,10;
 val rows = db.from(Anime())
@@ -350,13 +356,13 @@ val rows = db.from(Anime())
     .orderBy("start_date", false)
     .orderBy("title")
     .limit(10,0)
-    .select { Anime() } // return: MutableList<Anime>
+    .select() // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE idx=100 LIMIT 1;
 val rows = db.from(Anime())
     .where("idx=?",100)
     .limit(1)
-    .select { Anime() } // return: MutableList<Anime>
+    .select() // return: MutableList<Anime>
 // 又は
 val row = db.from(Anime()).where("idx=?",100).selectOne { Anime() } // return: Anime or null
 ```
@@ -400,7 +406,7 @@ val rows = db.from(Anime()).columns("title","progress","total").where("fin=?",0)
 ### ForEach
 ```kotlin
 // SQL> SELECT * FROM anime;
-db.from(Anime()).selectForEach({ Anime() }) { row -> // row: Anime
+db.from(Anime()).selectForEach { row -> // row: Anime
     row.run {
     // . . .
     }
