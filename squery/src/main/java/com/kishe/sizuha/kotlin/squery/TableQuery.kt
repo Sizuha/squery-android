@@ -706,13 +706,11 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     }
 
     fun insert(row: ISQueryRow): Boolean {
-        values(row)
-        return insert()
+        return values(row).insert()
     }
 
     fun insert(data: ContentValues): Boolean {
-        values(data)
-        return insert()
+        return values(data).insert()
     }
 
     // update
@@ -747,13 +745,11 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     }
 
     fun update(row: ISQueryRow): Int {
-        values(row)
-        return update()
+        return values(row).update()
     }
 
     fun update(data: ContentValues): Int {
-        values(data)
-        return update()
+        return values(data).update()
     }
 
     //------- insert or update -------//
@@ -762,13 +758,11 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     }
 
     fun insertOrUpdate(row: ISQueryRow): Boolean {
-        values(row)
-        return insertOrUpdate()
+        return values(row).insertOrUpdate()
     }
 
     fun insertOrUpdate(data: ContentValues): Boolean {
-        values(data)
-        return insertOrUpdate()
+        return values(data).insertOrUpdate()
     }
 
     //------- update or insert -------//

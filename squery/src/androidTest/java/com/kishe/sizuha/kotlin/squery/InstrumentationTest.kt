@@ -23,12 +23,12 @@ class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context,
 
 }
 
-class SampleTable : ISQueryRow {
-
-    override val tableName: String
-        get() = "Table_Name"
-
-}
+//class SampleTable : ISQueryRow {
+//
+//    override val tableName: String
+//        get() = "Table_Name"
+//
+//}
 
 @RunWith(AndroidJUnit4::class)
 class InstrumentationTest {

@@ -4,7 +4,6 @@ const val LOG_TAG = "squery"
 
 class Config {
 
-
     companion object {
 
         var enableDebugLog = false

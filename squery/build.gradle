@@ -1,9 +1,9 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.dokka-android'
 
 android {
     compileSdkVersion 28
-    buildToolsVersion "27.0.3"
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 28
@@ -29,7 +29,12 @@ android {
             }
         }
     }
+}
 
+dokka {
+    outputFormat = 'html'
+    sourceDirs = files('src/main')
+    outputDirectory = "$buildDir/javadoc"
 }
 
 dependencies {
