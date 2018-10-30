@@ -377,7 +377,7 @@ class AnimeTitle() : ISQueryRow {
     var title: String
 }
 val rows = db.from(Anime())
-    .column("title")
+    .columns("title")
     .where("start_date < ?", 200001)
     .select { AnimeTitle() }
 // 又は
