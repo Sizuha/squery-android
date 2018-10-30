@@ -773,12 +773,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
 
     //------- update or insert -------//
     private fun updateOrInsert(): Boolean {
-        if (sqlValues == null) {
-            return updateOrInsert(table)
-        }
-
-        val valuesForInsert = ContentValues().apply { putAll(sqlValues) }
-        return update() > 0 || insert(valuesForInsert)
+        return if (sqlValues == null) updateOrInsert(table) else updateOrInsert(sqlValues!!)
     }
 
     fun updateOrInsert(row: ISQueryRow): Boolean {
@@ -786,7 +781,8 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     }
 
     fun updateOrInsert(data: ContentValues): Boolean {
-        return update(data) > 0 || insert(data)
+        val valuesForInsert = ContentValues().apply { putAll(sqlValues) }
+        return update(data) > 0 || insert(valuesForInsert)
     }
 
 }
