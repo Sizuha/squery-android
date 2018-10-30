@@ -19,10 +19,6 @@ open class SQuery(context: Context, dbName: String, version: Int)
         return TableQuery(if (writable) writableDatabase else readableDatabase, table)
     }
 
-    fun <T: ISQueryRow> from(factory: ()->T, writable: Boolean = true): TableQuery<T> {
-        return TableQuery(if (writable) writableDatabase else readableDatabase, factory)
-    }
-
     fun createTable(table: ISQueryRow) {
         from(table).create()
     }

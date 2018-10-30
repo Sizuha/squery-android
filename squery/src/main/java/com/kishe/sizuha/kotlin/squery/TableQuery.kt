@@ -13,12 +13,9 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 
-class TableQuery<T: ISQueryRow>
-{
-    private val db: SQLiteDatabase
-    private val table: ISQueryRow
-    private val tableName: String
-    private val factory: (()->T)?
+class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val table: T) {
+
+    private val tableName: String = table.tableName
 
     // WHERE
     private var sqlWhere: String? = null
@@ -47,21 +44,6 @@ class TableQuery<T: ISQueryRow>
     private var sqlJoinTables = mutableListOf<String>()
     private var sqlJoinOn: String = ""
     private var sqlJoinOnArgs = mutableListOf<String>()
-
-    constructor(db: SQLiteDatabase, table: ISQueryRow) {
-        this.db = db
-        this.table = table
-        tableName = table.tableName
-        this.factory = null
-    }
-
-    constructor(db: SQLiteDatabase, factory: ()->T) {
-        this.db = db
-        this.table = factory()
-        tableName = table.tableName
-        this.factory = factory
-    }
-
 
     fun reset(): TableQuery<T> {
         sqlWhere = null
@@ -206,12 +188,6 @@ class TableQuery<T: ISQueryRow>
 
     fun delete(): Int {
         return db.delete(tableName, sqlWhere, sqlWhereArgs.toTypedArray())
-
-//        val sql = StringBuilder()
-//        sql.append("DELETE FROM `$tableName`")
-//        sqlWhere?.let { sql.append(" WHERE $it") }
-//        sql.append(";")
-//        sqlWhereArgs?.let { db.execSQL(sql.toString(), it) } ?: db.execSQL(sql.toString())
     }
 
     fun where(whereCond: String, vararg args: Any): TableQuery<T> {
@@ -512,7 +488,9 @@ class TableQuery<T: ISQueryRow>
 
     fun select(): MutableList<T> {
         return selectWithCursor { cursor ->
-            convertFromCursor(cursor, factory!!)
+            convertFromCursor(cursor) {
+                table.createEmptyRow() as T
+            }
         }
     }
 
@@ -548,7 +526,9 @@ class TableQuery<T: ISQueryRow>
     }
 
     fun selectOne(): T? {
-        return selectOne(factory!!)
+        return selectOne {
+            table.createEmptyRow() as T
+        }
     }
 
     fun <R: ISQueryRow> selectOne(factory: ()->R): R? {
@@ -557,7 +537,7 @@ class TableQuery<T: ISQueryRow>
         return null
     }
 
-    fun <R> selectOne(factory: (cursor: Cursor)->R): R? {
+    fun <R> selectOneWithCursor(factory: (cursor: Cursor)->R): R? {
         limit(1)
         return selectWithCursor { cur -> factory(cur) }.firstOrNull()
     }
@@ -570,7 +550,7 @@ class TableQuery<T: ISQueryRow>
     }
 
     fun selectForEach(each: (row: T)->Unit) {
-        selectForEach(factory!!, each)
+        selectForEach({ table.createEmptyRow() as T }, each)
     }
 
     inline fun <R: ISQueryRow> selectForEach(noinline factory: ()->R, crossinline each: (row: R)->Unit) {
