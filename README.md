@@ -49,8 +49,7 @@ SQueryでは、Tableの定義と行(row)データの扱いに「ISQueryRow」 in
 ISQueryRowを具現し、テーブル名を指定する。
 ```kotlin
 class SampleTable : ISQueryRow {    
-    override val tableName: String
-        get() = "テーブル名"
+    override val tableName = "テーブル名"
 }
 ```
 
@@ -76,8 +75,7 @@ var fieldVar: kotlinDataType
 ```kotlin
 class SampleTable : ISQueryRow {    
     // DB上のテーブル名
-    override val tableName: String
-        get() = "sample"
+    override val tableName = "sample"
         
     // 空の自分Typeのオブジェクトを返す
     override fun createEmptyRow() = SampleTable()
@@ -179,9 +177,8 @@ CREATE TABLE anime (
 ```
 ```kotlin
 class Anime() : ISQueryRow {
-    override val tableName: String
-        get() = "anime"
-        
+    override val tableName = "anime"
+    
     override fun createEmptyRow() = Anime()
 
     @Column("idx")
@@ -448,8 +445,7 @@ db.from(Anime()).selectForEachCursor { cursor ->
 ## Tableクラスのデータ変換をカスタマイズ
 ```kotlin
 class Anime() : ISQueryRow {
-    override val tableName: String
-        get() = "anime"
+    override val tableName = "anime"
         
     override fun createEmptyRow() = Anime()
 
