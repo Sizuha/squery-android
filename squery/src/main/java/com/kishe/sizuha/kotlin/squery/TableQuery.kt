@@ -2,6 +2,7 @@ package com.kishe.sizuha.kotlin.squery
 
 import android.content.ContentValues
 import android.database.Cursor
+import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import java.text.SimpleDateFormat
@@ -137,11 +138,12 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
             member.findAnnotation<Column>()?.let { col ->
                 if (isFirstCol) isFirstCol = false else sql.append(",")
 
-                val isAutoInc = member.findAnnotation<PrimaryKey>()?.autoInc == true
+                val pk = member.findAnnotation<PrimaryKey>()
+                val isAutoInc = pk?.autoInc == true
                 val dataType = if (isAutoInc) "INTEGER" else getDBColumnType(member)
                 sql.append("${col.name} $dataType")
 
-                if (isSinglePk) {
+                if (isSinglePk && pk != null) {
                     sql.append(" PRIMARY KEY")
                     if (isAutoInc) {
                         sql.append(" AUTOINCREMENT")
@@ -182,7 +184,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
 
     fun drop() {
         val sql = StringBuilder()
-        sql.append("DROP TABLE `$tableName`;")
+        sql.append("DROP TABLE IF EXISTS `$tableName`;")
         db.execSQL(sql.toString())
     }
 
@@ -305,97 +307,10 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         sqlJoinOnArgs.addAll(args)
     }
 
-    fun selectAsCursor(vararg cols: String): Cursor? {
-        if (cols.isNotEmpty()) columns(*cols)
-
-        val cur: Cursor?
-        var limitStr: String? = null
-
-        if (sqlColumns.isEmpty()) {
-            sqlColumns = getAllColumns()
-        }
-
-        if (sqlGroupBy.isNotEmpty()) {
-            sqlGroupByRaw = convertToCommaString(sqlGroupBy, true)
-        }
-
-        if (sqlOrderBy.isNotEmpty()) {
-            sqlOrderByRaw = makeOrderByString()
-        }
-
-        if (sqlLimit > 0) {
-            limitStr = "$sqlLimitOffset,$sqlLimit"
-        }
-
-        if (sqlJoinType == JoinType.NONE) {
-            cur = db.query(
-                sqlDistinct,
-                tableName,
-                sqlColumns.toTypedArray(),
-                sqlWhere,
-                sqlWhereArgs.toTypedArray(),
-                sqlGroupByRaw,
-                sqlHaving,
-                sqlOrderByRaw,
-                limitStr
-            )
-        }
-        else {
-            val sql = StringBuilder()
-            val sqlParams = mutableListOf<String>()
-
-            sql.append("SELECT ")
-            if (sqlDistinct) sql.append("DISTINCT ")
-
-            sql.append(convertToCommaString(sqlColumns, true))
-            sql.append(" FROM `$tableName` ")
-
-            // JOIN
-            sql.append(when (sqlJoinType) {
-                JoinType.LEFT_OUTER -> "LEFT OUTER JOIN "
-                JoinType.CROSS -> "CROSS JOIN "
-                else -> "INNER JOIN "
-            })
-            sql.append(convertToCommaString(sqlJoinTables, true))
-            sql.append(" ON $sqlJoinOn ")
-            for (ja in sqlJoinOnArgs) sqlParams.add(ja)
-
-            // WHERE
-            sqlWhere?.let {
-                sql.append(" WHERE $it ")
-                for (wa in sqlWhereArgs) sqlParams.add(wa)
-            }
-
-            // GROUP BY
-            sqlGroupByRaw?.let {
-                sql.append(" GROUP BY $it ")
-            }
-
-            // HAVING
-            sqlHaving?.let {
-                sql.append(" HAVING $it ")
-            }
-
-            // ORDER BY
-            sqlOrderByRaw?.let {
-                sql.append(" ORDER BY $it ")
-            }
-
-            // LIMIT
-            limitStr?.let {
-                sql.append(" LIMIT $it ")
-            }
-
-            cur = db.rawQuery(sql.toString(), sqlParams.toTypedArray())
-        }
-
-        return cur
-    }
-
     private fun findMemberInClass(tableObj: ISQueryRow, fieldName: String) =
-        tableObj::class.memberProperties.firstOrNull {
-            it.annotations.find { a -> a is Column && a.name == fieldName } != null
-        }
+            tableObj::class.memberProperties.firstOrNull {
+                it.annotations.find { a -> a is Column && a.name == fieldName } != null
+            }
 
     private fun setToProperty(colIdx: Int, tableObj: ISQueryRow, member: KMutableProperty<*>, cursor: Cursor) {
         val column = member.findAnnotation<Column>()
@@ -510,6 +425,99 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         member.isAccessible = accessible
     }
 
+    //------- SELECT -------//
+
+    fun count(): Long {
+        return DatabaseUtils.queryNumEntries(db, tableName, sqlWhere, sqlWhereArgs.toTypedArray())
+    }
+
+    fun selectAsCursor(vararg cols: String): Cursor? {
+        if (cols.isNotEmpty()) columns(*cols)
+
+        val cur: Cursor?
+        var limitStr: String? = null
+
+        if (sqlColumns.isEmpty()) {
+            sqlColumns = getAllColumns()
+        }
+
+        if (sqlGroupBy.isNotEmpty()) {
+            sqlGroupByRaw = convertToCommaString(sqlGroupBy, true)
+        }
+
+        if (sqlOrderBy.isNotEmpty()) {
+            sqlOrderByRaw = makeOrderByString()
+        }
+
+        if (sqlLimit > 0) {
+            limitStr = "$sqlLimitOffset,$sqlLimit"
+        }
+
+        if (sqlJoinType == JoinType.NONE) {
+            cur = db.query(
+                sqlDistinct,
+                tableName,
+                sqlColumns.toTypedArray(),
+                sqlWhere,
+                sqlWhereArgs.toTypedArray(),
+                sqlGroupByRaw,
+                sqlHaving,
+                sqlOrderByRaw,
+                limitStr
+            )
+        }
+        else {
+            val sql = StringBuilder()
+            val sqlParams = mutableListOf<String>()
+
+            sql.append("SELECT ")
+            if (sqlDistinct) sql.append("DISTINCT ")
+
+            sql.append(convertToCommaString(sqlColumns, true))
+            sql.append(" FROM `$tableName` ")
+
+            // JOIN
+            sql.append(when (sqlJoinType) {
+                JoinType.LEFT_OUTER -> "LEFT OUTER JOIN "
+                JoinType.CROSS -> "CROSS JOIN "
+                else -> "INNER JOIN "
+            })
+            sql.append(convertToCommaString(sqlJoinTables, true))
+            sql.append(" ON $sqlJoinOn ")
+            for (ja in sqlJoinOnArgs) sqlParams.add(ja)
+
+            // WHERE
+            sqlWhere?.let {
+                sql.append(" WHERE $it ")
+                for (wa in sqlWhereArgs) sqlParams.add(wa)
+            }
+
+            // GROUP BY
+            sqlGroupByRaw?.let {
+                sql.append(" GROUP BY $it ")
+            }
+
+            // HAVING
+            sqlHaving?.let {
+                sql.append(" HAVING $it ")
+            }
+
+            // ORDER BY
+            sqlOrderByRaw?.let {
+                sql.append(" ORDER BY $it ")
+            }
+
+            // LIMIT
+            limitStr?.let {
+                sql.append(" LIMIT $it ")
+            }
+
+            cur = db.rawQuery(sql.toString(), sqlParams.toTypedArray())
+        }
+
+        return cur
+    }
+
     fun select(): MutableList<T> {
         return selectWithCursor { cursor ->
             convertFromCursor(cursor) {
@@ -584,6 +592,8 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
             each(row)
         }
     }
+
+    //------- VALUES -------//
 
     fun values(row: ISQueryRow): TableQuery<T> {
         sqlValues = row.toValues() ?: ContentValues()
@@ -672,7 +682,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return this
     }
 
-    // insert
+    //------- INSERT -------//
     fun insert(): Boolean {
         printLog("try: INSERT")
 
@@ -713,7 +723,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return values(data).insert()
     }
 
-    // update
+    //------- UPDATE -------//
     fun update(autoMakeWhere: Boolean = true): Int {
         printLog("try: UPDATE")
 
@@ -752,7 +762,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return values(data).update()
     }
 
-    //------- insert or update -------//
+    //------- INSERT or UPDATE -------//
     fun insertOrUpdate(): Boolean {
         return insert() || update() > 0
     }
@@ -765,7 +775,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return values(data).insertOrUpdate()
     }
 
-    //------- update or insert -------//
+    //------- UPDATE or INSERT -------//
     private fun updateOrInsert(): Boolean {
         return if (sqlValues == null) updateOrInsert(table) else updateOrInsert(sqlValues!!)
     }
