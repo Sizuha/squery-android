@@ -1,4 +1,4 @@
-# squery-android
+# SQuery for Android(Kotlin)
 Simple Query Library for SQLite (Android/Kotlin)
 
 開発中...
@@ -97,7 +97,7 @@ class SampleTable : ISQueryRow {
 @PrimaryKey(seq=1, autoInc=false)
 ```
 @Columnを付けたフィルドに「@PrimaryKey」を付ける。
-autoInc=trueの場合、AUTOINCREMENTフィルド(INTEGER型)になる
+autoInc=trueの場合、AUTOINCREMENTフィルド(INTEGER型)になる。
 
 例）
 ```kotlin
@@ -359,4 +359,57 @@ val rows = db.from(Anime())
     .select { Anime() } // return: MutableList<Anime>
 // 又は
 val row = db.from(Anime()).where("idx=?",100).selectOne { Anime() } // return: Anime or null
+```
+
+### 結果をCursorで返す
+```kotlin
+// SQL> SELECT * FROM anime WHERE fin=0;
+val cursor = db.from(Anime()).where("fin=?",0).selectAsCursor() // return: Cursor
+cursor.use {
+// . . .
+}
+
+// SQL> SELECT title, progress, total FROM anime WHERE fin=0;
+val cursor = db.from(Anime()).columns("title","progress","total").where("fin=?",0).selectAsCursor()
+// 又は
+val cursor = db.from(Anime()).where("fin=?",0).selectAsCursor("title","progress","total")
+```
+
+### 手動でCursorからオブジェクトに変換
+```kotlin
+// SQL> SELECT title, progress, total FROM anime WHERE fin=0;
+val rows = db.from(Anime()).columns("title","progress","total").where("fin=?",0).selectWithCursor { cursor -> 
+    Anime().let { row ->
+        cursor.run {
+            var i: Int
+
+            i = getColumnIndex("title")
+            row.title = getString(i)
+
+            i = getColumnIndex("progress")
+            row.progress = getInt(i) / 10f
+
+            i = getColumnIndex("total")
+            row.total = getInt(i)
+        }
+        row // return (※ 返すオブジェクトはISqueryRow型でなくても大丈夫)
+    }
+} // return: MutableList<Anime>
+```
+
+### ForEach
+```kotlin
+// SQL> SELECT * FROM anime;
+db.from(Anime()).selectForEach({ Anime() }) { row -> // row: Anime
+    row.run {
+    // . . .
+    }
+}
+
+// 又は
+db.from(Anime()).selectForEachCursor { cursor ->
+    cursor.run {
+    // . . .
+    }
+}
 ```
