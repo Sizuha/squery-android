@@ -56,7 +56,7 @@ class SampleTable : ISQueryRow {
 
 次は各フィルド(column)を定義する。フィルド名、キー、Not Nullなどを「@Column」annotationで定義する。
 ```kotlin
-@Column("フィルド名", notNull=false, unique=false, orderByAsc=true)
+@Column("フィルド名", notNull=false, unique=false)
 var fieldVar: kotlinDataType
 ```
 「@Column」はクラスのメンバー変数とプロパティ(property)に付ける。
