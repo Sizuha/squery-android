@@ -97,7 +97,7 @@ class SampleTable : ISQueryRow {
 @PrimaryKey(seq=1, autoInc=false)
 ```
 @Columnを付けたフィルドに「@PrimaryKey」を付ける。
-autoInc=trueの場合、AUTOINCREMENTフィルド(INTEGER型)になる
+autoInc=trueの場合、AUTOINCREMENTフィルド(INTEGER型)になる。
 
 例）
 ```kotlin
