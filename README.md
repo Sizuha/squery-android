@@ -281,10 +281,10 @@ val row = Anime().apply {
     total = 1
     startDate = 20181001
 }
-db.from(row).insert()
+db.from(Anime()).values(row).insert()
 
 // 又は
-db.from(Anime()).values(row).insert()
+db.from(row).insert()
 
 // 又は
 val data = ContentValues().apply { 
@@ -305,10 +305,10 @@ AUTOINCREMENTのフィルドは自動で外される。
 val row = Anime().apply { 
     // . . .
 }
-db.from(row).update()
+db.from(Anime()).values(row).update()
 
 // 又は
-db.from(Anime()).values(row).update()
+db.from(row).update()
 
 // 又は
 val data = ContentValues().apply { 
@@ -326,10 +326,10 @@ where()を省略した場合、自動でWHERE句が追加される。この場�
 val row = Anime().apply { 
     // . . .
 }
-db.from(row).insertOrUpdate()
-
-// 又は
 db.from(row).where("idx = ?", row.idx).insertOrUpdate()
+
+// 又は (WHERE句を自動で作成する)
+db.from(row).insertOrUpdate()
 
 // 又は
 db.from(Anime()).values(row).where("idx = ?", row.idx).insertOrUpdate()
@@ -364,7 +364,26 @@ val rows = db.from(Anime())
     .limit(1)
     .select() // return: MutableList<Anime>
 // 又は
-val row = db.from(Anime()).where("idx=?",100).selectOne { Anime() } // return: Anime or null
+val row = db.from(Anime()).where("idx=?",100).selectOne() // return: Anime or null
+
+// SQL> SELECT title FROM anime WHERE start_date < 200001;
+class AnimeTitle() : ISQueryRow {
+    override val tableName: String
+        get() = "anime"
+
+    override fun createEmptyRow() = AnimeTitle()
+    
+    @Column("title", notNull=true)
+    var title: String
+}
+val rows = db.from(Anime())
+    .column("title")
+    .where("start_date < ?", 200001)
+    .select { AnimeTitle() }
+// 又は
+val rows = db.from(AnimeTitle())
+    .where("start_date < ?", 200001)
+    .select()
 ```
 
 ### 結果をCursorで返す
