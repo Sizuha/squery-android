@@ -4,7 +4,7 @@ Simple Query Library for SQLite (Android/Kotlin)
 開発中...
 Now Developing
 
-* 最新Version: 1.0.4
+* 最新Version: 1.0.5
 * 注意：開発中のライブラリーなので、まだ充分なテストができていません。
 
 
@@ -13,7 +13,7 @@ Now Developing
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.4@aar'
+    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.5@aar'
     // . . .
 }
 ~~~
