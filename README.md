@@ -442,7 +442,7 @@ db.from(Anime()).selectForEachCursor { cursor ->
 }
 ```
 
-## Tableクラスのデータ変換をカスタマイズ
+## ISQueryRowクラスの「読み込み・書き込み」をカスタマイズ
 ```kotlin
 class Anime() : ISQueryRow {
     override val tableName = "anime"
