@@ -586,12 +586,11 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     }
 
     fun values(row: ISQueryRow): TableQuery<T> {
-        sqlValues = row.toValues()
-        if (sqlValues != null) return this
+        sqlValues = row.toValues() ?: ContentValues()
 
-        sqlValues = ContentValues()
         for (member in table::class.memberProperties) {
             val column = member.findAnnotation<Column>() ?: continue
+            if (column.exclude) continue
 
             val accessible = member.isAccessible
             member.isAccessible = true
