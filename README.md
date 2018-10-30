@@ -385,6 +385,9 @@ val rows = db.from(AnimeTitle())
     .where("start_date < ?", 200001)
     .select()
 ```
+他にも、```groupBy()```、```having()```、```distinct()```なども使える。
+
+JOIN機能はまだテスト中。
 
 ### 結果をCursorで返す
 ```kotlin
