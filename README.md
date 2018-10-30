@@ -4,7 +4,7 @@ Simple Query Library for SQLite (Android/Kotlin)
 開発中...
 Now Developing
 
-* 最新Version: 1.0.7
+* 最新Version: 1.0.8
 * 注意：開発中のライブラリーなので、まだ充分なテストができていません。
 
 
@@ -13,7 +13,7 @@ Now Developing
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.7@aar'
+    implementation 'com.kishe.sizuha.kotlin.squery:squery:1.0.8@aar'
     // . . .
 }
 ~~~
@@ -441,6 +441,37 @@ db.from(Anime()).selectForEach { row -> // row: Anime
 db.from(Anime()).selectForEachCursor { cursor ->
     cursor.run {
     // . . .
+    }
+}
+```
+
+## Tableクラスのデータ変換をカスタマイズ
+```kotlin
+class Anime() : ISQueryRow {
+    override val tableName: String
+        get() = "anime"
+        
+    override fun createEmptyRow() = Anime()
+
+    // ...省略...
+    
+    // exclude=trueのフィルドは、DBから自動でデータを読み込まない
+    @Column("rating", exclude=true) 
+    var rating = 0f // ex) 1f = 100, 0.5f = 50
+    
+    // ...省略...
+    
+    override fun toValues(): ContentValues? {
+        return ContentValues().apply {
+            put("rating", (rating*100).toInt())
+        }
+    }
+    
+    override fun loadFrom(cursor: Cursor) {
+        cursor.run {
+            var i = getColumnIndex("rating")
+            rating = getInt(i) / 100f
+        }
     }
 }
 ```
