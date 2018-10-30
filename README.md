@@ -451,7 +451,7 @@ class Anime() : ISQueryRow {
 
     // ...省略...
     
-    // exclude=trueのフィルドは、DBから自動でデータを読み込まない
+    // exclude=trueのフィルドは、DBから自動でデータの読み込みや書き込みを行わない
     @Column("rating", exclude=true) 
     var rating = 0f // ex) 1f = 100, 0.5f = 50
     
