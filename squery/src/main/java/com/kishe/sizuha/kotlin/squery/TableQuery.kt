@@ -398,10 +398,12 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         }
 
     private fun setToProperty(colIdx: Int, tableObj: ISQueryRow, member: KMutableProperty<*>, cursor: Cursor) {
-        var value: Any? = null
         val column = member.findAnnotation<Column>()
-        val notNull = column?.notNull == true || !member.returnType.isMarkedNullable
+        if (column?.exclude == true) return
 
+        var value: Any? = null
+
+        val notNull = column?.notNull == true || !member.returnType.isMarkedNullable
         if (notNull || !cursor.isNull(colIdx)) {
             loop@ for (a in member.annotations) when (a) {
                 is DateType -> {
@@ -530,6 +532,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
                 }
             }
         }
+        row.loadFrom(cursor)
 
         return row
     }

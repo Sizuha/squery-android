@@ -5,7 +5,7 @@ annotation class Column(
         val name: String,
         val notNull: Boolean = false,
         val unique: Boolean = false,
-        val orderByAsc: Boolean = true
+        val exclude: Boolean = false
 )
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
