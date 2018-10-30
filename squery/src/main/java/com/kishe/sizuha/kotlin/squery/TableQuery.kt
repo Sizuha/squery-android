@@ -6,7 +6,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.prefs.PreferencesFactory
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.createType
@@ -14,12 +13,12 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 
-class TableQuery
+class TableQuery<T: ISQueryRow>
 {
     private val db: SQLiteDatabase
     private val table: ISQueryRow
     private val tableName: String
-    //private var factory: (()->ISQueryRow)? = null
+    private val factory: (()->T)?
 
     // WHERE
     private var sqlWhere: String? = null
@@ -53,17 +52,18 @@ class TableQuery
         this.db = db
         this.table = table
         tableName = table.tableName
+        this.factory = null
     }
 
-//    constructor(db: SQLiteDatabase, factory: ()->ISQueryRow) {
-//        this.db = db
-//        this.table = factory()
-//        tableName = table.tableName
-//        this.factory = factory
-//    }
+    constructor(db: SQLiteDatabase, factory: ()->T) {
+        this.db = db
+        this.table = factory()
+        tableName = table.tableName
+        this.factory = factory
+    }
 
 
-    fun reset(): TableQuery {
+    fun reset(): TableQuery<T> {
         sqlWhere = null
         sqlWhereArgs.clear()
 
@@ -214,29 +214,29 @@ class TableQuery
 //        sqlWhereArgs?.let { db.execSQL(sql.toString(), it) } ?: db.execSQL(sql.toString())
     }
 
-    fun where(whereCond: String, vararg args: Any): TableQuery {
+    fun where(whereCond: String, vararg args: Any): TableQuery<T> {
         sqlWhere = whereCond
         for (a in args) { sqlWhereArgs.add(a.toString()) }
         return this
     }
 
-    fun orderBy(field: String, asc: Boolean = true): TableQuery {
+    fun orderBy(field: String, asc: Boolean = true): TableQuery<T> {
         sqlOrderBy.add(Pair(field, asc))
         return this
     }
 
-    fun orderByRaw(orderBy: String): TableQuery {
+    fun orderByRaw(orderBy: String): TableQuery<T> {
         sqlOrderBy.clear()
         sqlOrderByRaw = orderBy
         return this
     }
 
-    fun groupBy(field: String): TableQuery {
+    fun groupBy(field: String): TableQuery<T> {
         sqlGroupBy.add(field)
         return this
     }
 
-    fun groupByRaw(groupBy: String): TableQuery {
+    fun groupByRaw(groupBy: String): TableQuery<T> {
         sqlGroupBy.clear()
         sqlGroupByRaw = groupBy
         return this
@@ -246,12 +246,12 @@ class TableQuery
         sqlHaving = havingStr
     }
 
-    fun distinct(enable: Boolean = true): TableQuery {
+    fun distinct(enable: Boolean = true): TableQuery<T> {
         sqlDistinct = enable
         return this
     }
 
-    fun limit(count: Int, offset: Int = 0): TableQuery {
+    fun limit(count: Int, offset: Int = 0): TableQuery<T> {
         sqlLimit = count
         sqlLimitOffset = offset
         return this
@@ -272,7 +272,7 @@ class TableQuery
         return result
     }
 
-    fun columns(vararg cols: String/*, addTableName: Boolean = false*/): TableQuery {
+    fun columns(vararg cols: String/*, addTableName: Boolean = false*/): TableQuery<T> {
         sqlColumns.clear()
 
         for (c in cols) {
@@ -510,17 +510,17 @@ class TableQuery
         member.isAccessible = accessible
     }
 
-//    fun <T: ISQueryRow> select(): MutableList<T> {
-//        return selectWithCursor { cursor ->
-//            convertFromCursor(cursor, factory!!) as T
-//        }
-//    }
+    fun select(): MutableList<T> {
+        return selectWithCursor { cursor ->
+            convertFromCursor(cursor, factory!!)
+        }
+    }
 
-    fun <T: ISQueryRow> select(factory: ()->T): MutableList<T> {
+    fun <R: ISQueryRow> select(factory: ()->R): MutableList<R> {
         return selectWithCursor { cur -> convertFromCursor(cur, factory) }
     }
 
-    fun <T: ISQueryRow> convertFromCursor(cursor: Cursor, factory: ()->T): T {
+    fun <R: ISQueryRow> convertFromCursor(cursor: Cursor, factory: ()->R): R {
         val row = factory()
         for (idx in 0 until cursor.columnCount) {
             val colName = cursor.getColumnName(idx)
@@ -534,8 +534,8 @@ class TableQuery
         return row
     }
 
-    fun <T> selectWithCursor(factory: (cursor: Cursor)->T): MutableList<T> {
-        val rows = mutableListOf<T>()
+    fun <R> selectWithCursor(factory: (cursor: Cursor)->R): MutableList<R> {
+        val rows = mutableListOf<R>()
 
         return selectAsCursor().use { cur ->
             if (cur == null) return rows
@@ -547,13 +547,17 @@ class TableQuery
         }
     }
 
-    fun <T: ISQueryRow> selectOne(factory: ()->T): T? {
+    fun selectOne(): T? {
+        return selectOne(factory!!)
+    }
+
+    fun <R: ISQueryRow> selectOne(factory: ()->R): R? {
         limit(1)
         select(factory).forEach { row -> return row }
         return null
     }
 
-    fun <T> selectOne(factory: (cursor: Cursor)->T): T? {
+    fun <R> selectOne(factory: (cursor: Cursor)->R): R? {
         limit(1)
         return selectWithCursor { cur -> factory(cur) }.firstOrNull()
     }
@@ -565,14 +569,18 @@ class TableQuery
         }
     }
 
-    inline fun <T: ISQueryRow> selectForEach(noinline factory: ()->T, crossinline each: (row: T)->Unit) {
+    fun selectForEach(each: (row: T)->Unit) {
+        selectForEach(factory!!, each)
+    }
+
+    inline fun <R: ISQueryRow> selectForEach(noinline factory: ()->R, crossinline each: (row: R)->Unit) {
         selectForEachCursor {
             val row = convertFromCursor(it, factory)
             each(row)
         }
     }
 
-    fun values(row: ISQueryRow): TableQuery {
+    fun values(row: ISQueryRow): TableQuery<T> {
         sqlValues = row.toValues()
         if (sqlValues != null) return this
 
@@ -655,7 +663,7 @@ class TableQuery
         return this
     }
 
-    fun values(data: ContentValues): TableQuery {
+    fun values(data: ContentValues): TableQuery<T> {
         sqlValues = data
         return this
     }
@@ -679,19 +687,18 @@ class TableQuery
             }
         }
 
-        if (Config.enableDebugLog) {
-            printValues()
-        }
-
+        printValues()
         return db.insert(tableName, null, sqlValues) > 0
     }
 
     private fun printValues() {
-        Log.d(LOG_TAG, "===values===")
-        sqlValues?.valueSet()?.forEach {
-            Log.d(LOG_TAG, "  ${it.key} => ${it.value}")
+        if (Config.enableDebugLog) {
+            Log.d(LOG_TAG, "===values===")
+            sqlValues?.valueSet()?.forEach {
+                Log.d(LOG_TAG, "  ${it.key} => ${it.value}")
+            }
+            Log.d(LOG_TAG, "===END===")
         }
-        Log.d(LOG_TAG, "===END===")
     }
 
     fun insert(row: ISQueryRow): Boolean {

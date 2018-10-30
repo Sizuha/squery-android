@@ -15,13 +15,13 @@ open class SQuery(context: Context, dbName: String, version: Int)
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {}
 
-    fun from(table: ISQueryRow, writable: Boolean = true): TableQuery {
+    fun <T: ISQueryRow> from(table: T, writable: Boolean = true): TableQuery<T> {
         return TableQuery(if (writable) writableDatabase else readableDatabase, table)
     }
 
-//    fun <T: ISQueryRow> from(factory: ()->T, writable: Boolean = true): TableQuery {
-//        return TableQuery(if (writable) writableDatabase else readableDatabase, factory)
-//    }
+    fun <T: ISQueryRow> from(factory: ()->T, writable: Boolean = true): TableQuery<T> {
+        return TableQuery(if (writable) writableDatabase else readableDatabase, factory)
+    }
 
     fun createTable(table: ISQueryRow) {
         from(table).create()
