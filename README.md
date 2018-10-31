@@ -314,10 +314,10 @@ val data = ContentValues().apply {
 db.from(Anime()).values(data).update()
 ```
 where()を省略した場合、自動でWHERE句が追加される。この場合、主キー(Primary Key)を使ってWHERE句を作成する。
-自動でWHERE句を作成したくない場合は、```update(false)```のように使える。
+自動でWHERE句を作成したくない場合は、`update(false)`のように使える。
 
 ## Insert or Update
-```insert()```を試して失敗したら```update()```を試す。
+`insert()`を試して失敗したら`update()`を試す。
 
 ```kotlin
 val row = Anime().apply { 
@@ -382,7 +382,7 @@ val rows = db.from(AnimeTitle())
     .where("start_date < ?", 200001)
     .select()
 ```
-他にも、```groupBy()```、```having()```、```distinct()```なども使える。
+他にも、`groupBy()`、`having()`、`distinct()`なども使える。
 
 JOIN機能はまだテスト中。
 
