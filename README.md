@@ -477,6 +477,7 @@ db.from(Anime()).selectForEachCursor { cursor ->
 ## Where
 WHERE句で条件をANDでつなげる事がよくある。この場合`whereAnd()`メソッドが使える。
 ```kotlin
+// SQL> SELECT * FROM anime WHERE (fin=0) AND (media=1) AND (start_date>200000);
 val rows = db.from(Anime())
     .where("fin=?", 0)
     .whereAnd("media=?", 1)
