@@ -258,8 +258,9 @@ SQueryは単純なケースのQueryをなるべく自動かするのが目標な
 * CREATE TABLEの`@PrimaryKey(autoInc=true)`のフィルドは、テーブルに一つしか存在しないと仮定する。
 * この場合、TABLEの中でPrimaryKeyは一つしかないと仮定する。
 
-### キー
-* 外部キー(FOREIGN KEY)はサポートしない。
+### 外部キー(FOREIGN KEY)
+* 外部キー(FOREIGN KEY)は基本的にサポートしない。
+* CREATE TABLEの場合は`SQuery`クラスの`execute()`メソッドで手動でクエリを作成。
 
 ## Create Table
 ```kotlin
@@ -331,6 +332,8 @@ db.from(Anime()).values(data).update()
 where()を省略した場合、自動でWHERE句が追加される。この場合、主キー(Primary Key)を使ってWHERE句を作成する。
 自動でWHERE句を作成したくない場合は、`update(false)`のように使える。
 
+主キー(`@PrimaryKey`)で指定されたフィルドは`SET`の内容から自動で外される。
+
 ## Insert or Update
 `insert()`を試して失敗したら`update()`を試す。
 
@@ -338,13 +341,28 @@ where()を省略した場合、自動でWHERE句が追加される。この場�
 val row = Anime().apply { 
     // . . .
 }
-db.from(row).where("idx = ?", row.idx).insertOrUpdate()
+db.from(row).where("idx=?", row.idx).insertOrUpdate()
 
 // 又は (WHERE句を自動で作成する)
 db.from(row).insertOrUpdate()
 
 // 又は
-db.from(Anime()).values(row).where("idx = ?", row.idx).insertOrUpdate()
+db.from(Anime()).values(row).where("idx=?", row.idx).insertOrUpdate()
+```
+
+## Update or Insert
+`update()`を試して失敗したら`insert()`を試す。
+```kotlin
+val row = Anime().apply { 
+    // . . .
+}
+db.from(row).where("idx=?", row.idx).updateOrInsert()
+
+// 又は (WHERE句を自動で作成する)
+db.from(row).insertOrUpdate()
+
+// 又は
+db.from(Anime()).values(row).where("idx=?", row.idx).updateOrInsert()
 ```
 
 ## Select
