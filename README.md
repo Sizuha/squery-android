@@ -27,6 +27,11 @@ val db = SQuery(this, "DB_NAME", DB_VER /* 1 */ )
 
 // Close
 db.close()
+
+// .useも使える（自動でclose）
+SQuery(this, "DB_NAME", DB_VER /* 1 */ ).use {
+    // . . .
+}
 ```
 
 SQLiteOpenHelperクラスみたいに、SQueryクラスをオーバーライドする事も出来る。
@@ -245,6 +250,16 @@ class Anime() : ISQueryRow {
     var removed = false
 }
 ```
+
+### 制限、仮定
+SQueryは単純なケースのQueryをなるべく自動かするのが目標なので、色々制限がある。もし、もっと詳細なQueryが必要な場合は`SQuery`クラスの`rawQuery(sql: String, args: Array<out String>): Cursor?`又は`execute(sql: String, args: Array<out String>)`メソッドを使う。
+
+#### CREATE TABLEで、AUTO INCREMENTの扱い
+* CREATE TABLEの`@PrimaryKey(autoInc=true)`のフィルドは、テーブルに一つしか存在しないと仮定する。
+* この場合、TABLEの中でPrimaryKeyは一つしかないと仮定する。
+
+### キー
+* 外部キー(FOREIGN KEY)はサポートしない。
 
 ## Create Table
 ```kotlin
