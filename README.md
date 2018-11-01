@@ -255,8 +255,7 @@ class Anime() : ISQueryRow {
 SQueryは単純なケースのQueryをなるべく自動かするのが目標なので、色々制限がある。もし、もっと詳細なQueryが必要な場合は`SQuery`クラスの`rawQuery(sql: String, args: Array<out String>): Cursor?`又は`execute(sql: String, args: Array<out String>)`メソッドを使う。
 
 #### CREATE TABLEで、AUTO INCREMENTの扱い
-* CREATE TABLEの`@PrimaryKey(autoInc=true)`のフィルドは、テーブルに一つしか存在しないと仮定する。
-* この場合、TABLEの中でPrimaryKeyは一つしかないと仮定する。
+* CREATE TABLEの時、`@PrimaryKey(autoInc=true)`のフィルドがある場合、これがテーブルの中で唯一の主キーであること。
 
 ### 外部キー(FOREIGN KEY)
 * 外部キー(FOREIGN KEY)は基本的にサポートしない。
