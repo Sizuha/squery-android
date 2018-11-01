@@ -19,7 +19,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     private val tableName: String = table.tableName
 
     // WHERE
-    private var sqlWhere: String? = null
+    private var sqlWhere = StringBuilder()
     private var sqlWhereArgs = mutableListOf<String>()
 
     private var sqlValues: ContentValues? = null
@@ -47,7 +47,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     private var sqlJoinOnArgs = mutableListOf<String>()
 
     fun reset(): TableQuery<T> {
-        sqlWhere = null
+        sqlWhere.clear()
         sqlWhereArgs.clear()
 
         sqlValues = null
@@ -188,12 +188,30 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         db.execSQL(sql.toString())
     }
 
+    private fun makeWhereText(): String? =
+        if (sqlWhere.isNotEmpty()) sqlWhere.toString() else null
+
     fun delete(): Int {
-        return db.delete(tableName, sqlWhere, sqlWhereArgs.toTypedArray())
+        return db.delete(tableName, makeWhereText(), sqlWhereArgs.toTypedArray())
     }
 
     fun where(whereCond: String, vararg args: Any): TableQuery<T> {
-        sqlWhere = whereCond
+        sqlWhere.clear()
+        sqlWhere.append("($whereCond)")
+        for (a in args) { sqlWhereArgs.add(a.toString()) }
+        return this
+    }
+
+    fun whereWithList(whereCond: String, args: List<Any>): TableQuery<T> {
+        sqlWhere.clear()
+        sqlWhere.append("($whereCond)")
+        for (a in args) { sqlWhereArgs.add(a.toString()) }
+        return this
+    }
+
+    fun whereAnd(whereCond: String, vararg args: Any): TableQuery<T> {
+        if (sqlWhere.isNotEmpty()) sqlWhere.append(" AND ")
+        sqlWhere.append("($whereCond)")
         for (a in args) { sqlWhereArgs.add(a.toString()) }
         return this
     }
@@ -428,7 +446,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     //------- SELECT -------//
 
     fun count(): Long {
-        return DatabaseUtils.queryNumEntries(db, tableName, sqlWhere, sqlWhereArgs.toTypedArray())
+        return DatabaseUtils.queryNumEntries(db, tableName, makeWhereText(), sqlWhereArgs.toTypedArray())
     }
 
     fun selectAsCursor(vararg cols: String): Cursor? {
@@ -458,7 +476,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
                 sqlDistinct,
                 tableName,
                 sqlColumns.toTypedArray(),
-                sqlWhere,
+                makeWhereText(),
                 sqlWhereArgs.toTypedArray(),
                 sqlGroupByRaw,
                 sqlHaving,
@@ -730,28 +748,22 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         val keys = getKeyFields().map { it.name }
         if (sqlValues == null) values(table)
 
-        if (autoMakeWhere && sqlWhere.isNullOrEmpty()) {
-            sqlWhere = StringBuilder().apply {
-                var isFirst = true
-                for (k in keys) {
-                    if (isFirst) isFirst = false else append(" AND ")
-
-                    append("$k=?")
-                    sqlWhereArgs.add(sqlValues?.get(k).toString())
-                }
-            }.toString()
+        if (autoMakeWhere && sqlWhere.isEmpty()) {
+            for (k in keys) {
+                whereAnd("$k=?", sqlValues?.get(k).toString())
+            }
         }
 
         sqlValues?.valueSet()?.removeAll {
             keys.contains(it.key) /*|| keys.contains("$tableName.${it.key}")*/
         }
 
+        val whereText = makeWhereText()
         if (Config.enableDebugLog) {
-            printLog("where: $sqlWhere")
+            printLog("where: $whereText")
             printValues()
         }
-
-        return db.update(tableName, sqlValues, sqlWhere, sqlWhereArgs.toTypedArray())
+        return db.update(tableName, sqlValues, whereText, sqlWhereArgs.toTypedArray())
     }
 
     fun update(row: ISQueryRow): Int {
