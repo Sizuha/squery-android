@@ -9,17 +9,16 @@ import org.junit.runner.RunWith
 
 import org.junit.Assert.*
 import org.junit.Test
+import java.text.SimpleDateFormat
 import java.util.*
 
 class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context, dbName, version) {
 
     override fun onCreate(db: SQLiteDatabase?) {
         super.onCreate(db)
-        // TODO ...
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        // TODO ...
     }
 
 }
@@ -54,27 +53,37 @@ class User : ISQueryRow {
 @RunWith(AndroidJUnit4::class)
 class DatabaseTest {
 
-    fun getContext() = InstrumentationRegistry.getTargetContext()
+    private fun getContext() = InstrumentationRegistry.getTargetContext()
 
-    val userTable = User()
+    private val userTable = User()
+    private val dateTimeFmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
-    fun openDB(): SQuery {
-        return SampleDB(getContext(), "users.db", 1)
+    private fun openDB(): SQuery {
+        return SampleDB(getContext(), "test-users.db", 1)
     }
+
+    private fun releaseDB() {
+        openDB().use {
+            it.from(userTable).drop()
+        }
+    }
+
+    //-------------- Basic Test
 
     @Test
     @Throws(Exception::class)
-    fun createAndDelete() {
+    fun createTableAndBasicTest() {
         createTableAndInsert()
 
         val row = findInsertedRow()
         update(row)
 
-        delete()
+        deleteAll()
+        releaseDB()
     }
 
     @Throws(Exception::class)
-    fun createTableAndInsert() {
+    private fun createTableAndInsert() {
         openDB().use { db ->
             db.from(userTable).drop()
             db.createTable(User())
@@ -92,14 +101,14 @@ class DatabaseTest {
     }
 
     @Throws(Exception::class)
-    fun findInsertedRow(): User {
+    private fun findInsertedRow(): User {
         openDB().use { db ->
             return db.from(userTable).selectOne()!!
         }
     }
 
     @Throws(Exception::class)
-    fun update(user: User) {
+    private fun update(user: User) {
         openDB().use { db ->
             val result = db.from(userTable)
                     .values(ContentValues().apply {
@@ -108,7 +117,6 @@ class DatabaseTest {
                         put("f_name", "愛美")
                         put("birth", 19880415)
                     })
-                    //.where("birth=?",19780415)
                     .update()
             assertEquals(result, 1)
 
@@ -118,7 +126,7 @@ class DatabaseTest {
     }
 
     @Throws(Exception::class)
-    fun delete() {
+    private fun deleteAll() {
         openDB().use { db ->
             db.from(userTable).delete()
 
@@ -127,5 +135,95 @@ class DatabaseTest {
         }
     }
 
+    //-------------- INSERT / UPDATE Test
+
+    class WrongUser : ISQueryRow {
+        override val tableName: String = "user"
+        override fun createEmptyRow() = WrongUser()
+
+        @Column("idx")
+        var idx = 0
+
+        @Column("l_name")
+        var lastName = ""
+
+        @Column("f_name")
+        var firstName = ""
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun insertAndUpdateTest() {
+        openDB().use { db ->
+            db.from(userTable).create()
+            var result = false
+
+            //--- INSERT
+
+            // row 1
+            result = db.from(User().apply {
+                lastName = "Test"
+                firstName = "User"
+                birth = 19990101
+                email = "test@test.com"
+            }).insert()
+            assertTrue(result)
+
+            // row 2
+            result = db.from(userTable).values(User().apply {
+                lastName = "Test"
+                firstName = "User"
+                birth = 19990101
+                email = "test@test.com"
+            }).insert()
+            assertTrue(result)
+
+            // row 3
+            val regDateText = dateTimeFmt.format(dateTimeFmt.parse("1980-12-31 23:00:00"))
+            result = db.from(userTable).values(ContentValues().apply {
+                put("l_name", "Test")
+                put("f_name", "User")
+                put("birth", 19990101)
+                put("email", "test@test.com")
+                put("reg_date", regDateText)
+            }).insert()
+            assertTrue(result)
+            val rowCount = db.from(userTable).count()
+
+            // insert fail
+            result = db.from(WrongUser().apply {
+                idx = 1
+                lastName = "ERROR"
+                firstName = "INSERT"
+            }).insert()
+            assertFalse(result)
+
+            var resCount = db.from(userTable).where("l_name=?", "Test").count()
+            assertEquals(resCount, rowCount)
+
+            resCount = db.from(userTable).where("reg_date=?", regDateText).count()
+            assertEquals(resCount, 1)
+
+
+            //--- UPDATE
+            resCount = db.from(userTable)
+                    .where("l_name=?", "Test")
+                    .values(ContentValues().apply {
+                        put("l_name", "TEST")
+                    })
+                    .update().toLong()
+            assertEquals(resCount, rowCount)
+
+            resCount = db.from(userTable)
+                    .where("f_name=?", "User")
+                    .update(ContentValues().apply {
+                        put("f_name", "USER")
+                    }).toLong()
+            assertEquals(resCount, rowCount)
+
+        }
+
+        releaseDB()
+    }
 
 }
