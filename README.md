@@ -474,6 +474,23 @@ db.from(Anime()).selectForEachCursor { cursor ->
 }
 ```
 
+## Where
+WHERE句で条件をANDでつなげる事がよくある。この場合`whereAnd()`メソッドが使える。
+```kotlin
+// SQL> SELECT * FROM anime WHERE (fin=0) AND (media=1) AND (start_date>200000);
+val rows = db.from(Anime())
+    .where("fin=?", 0)
+    .whereAnd("media=?", 1)
+    .whereAnd("start_date>?", 200000)
+    .select()
+// 又は    
+val rows = db.from(Anime())
+    .whereAnd("fin=?", 0)
+    .whereAnd("media=?", 1)
+    .whereAnd("start_date>?", 200000)
+    .select()
+```
+
 ## ISQueryRowクラスの「読み込み・書き込み」をカスタマイズ
 ```kotlin
 class Anime() : ISQueryRow {
