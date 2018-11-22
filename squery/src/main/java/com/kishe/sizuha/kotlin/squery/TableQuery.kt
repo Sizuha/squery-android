@@ -30,10 +30,11 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     private var sqlOrderByRaw: String? = null
     private val sqlOrderBy = mutableListOf<Pair<String,Boolean>>()
 
+    // GROUP BY
     private var sqlGroupByRaw: String? = null
     private val sqlGroupBy = mutableListOf<String>()
-
     private var sqlHaving: String? = null
+    private var sqlHavingArgs = mutableListOf<String>()
 
     private var sqlLimit = 0
     private var sqlLimitOffset = 0
@@ -59,8 +60,8 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
 
         sqlGroupByRaw = null
         sqlGroupBy.clear()
-
         sqlHaving = null
+        sqlHavingArgs.clear()
 
         sqlLimit = 0
         sqlLimitOffset = 0
@@ -238,8 +239,10 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return this
     }
 
-    fun having(havingStr: String) {
+    fun having(havingStr: String, vararg args: String): TableQuery<T> {
         sqlHaving = havingStr
+        sqlHavingArgs.addAll(args)
+        return this
     }
 
     fun distinct(enable: Boolean = true): TableQuery<T> {
@@ -446,7 +449,63 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
     //------- SELECT -------//
 
     fun count(): Long {
-        return DatabaseUtils.queryNumEntries(db, tableName, makeWhereText(), sqlWhereArgs.toTypedArray())
+        val sqlParams = mutableListOf<String>()
+        val sql = makeQueryString(sqlParams)
+        return DatabaseUtils.longForQuery(db, sql, sqlParams.toTypedArray())
+    }
+
+    private fun makeQueryString(outSqlParams: MutableList<String>): String {
+        val sql = StringBuilder()
+
+        sql.append("SELECT ")
+        if (sqlDistinct) sql.append("DISTINCT ")
+
+        sql.append(convertToCommaString(sqlColumns, true))
+        sql.append(" FROM `$tableName` ")
+
+        // JOIN
+        if (sqlJoinType == JoinType.NONE) {
+            sql.append(when (sqlJoinType) {
+                JoinType.LEFT_OUTER -> "LEFT OUTER JOIN "
+                JoinType.CROSS -> "CROSS JOIN "
+                else -> "INNER JOIN "
+            })
+            sql.append(convertToCommaString(sqlJoinTables, true))
+            sql.append(" ON $sqlJoinOn ")
+
+            outSqlParams.addAll(sqlJoinOnArgs)
+        }
+
+        // WHERE
+        if (sqlWhere.isNotEmpty()) {
+            sql.append(" WHERE ")
+            sql.append(sqlWhere)
+
+            outSqlParams.addAll(sqlWhereArgs)
+        }
+
+        // GROUP BY
+        sqlGroupByRaw?.let { groupBy ->
+            sql.append(" GROUP BY $groupBy ")
+
+            // HAVING
+            if (!sqlHaving.isNullOrEmpty()) {
+                sql.append(" HAVING $sqlHaving ")
+                outSqlParams.addAll(sqlHavingArgs)
+            }
+        }
+
+        // ORDER BY
+        sqlOrderByRaw?.let {
+            sql.append(" ORDER BY $it ")
+        }
+
+        // LIMIT
+        if (sqlLimit > 0) {
+            sql.append(" LIMIT $sqlLimitOffset,$sqlLimit")
+        }
+
+        return sql.toString()
     }
 
     fun selectAsCursor(vararg cols: String): Cursor? {
@@ -471,7 +530,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
             limitStr = "$sqlLimitOffset,$sqlLimit"
         }
 
-        if (sqlJoinType == JoinType.NONE) {
+        if (sqlJoinType == JoinType.NONE && sqlHavingArgs.isEmpty()) {
             cur = db.query(
                 sqlDistinct,
                 tableName,
@@ -485,52 +544,9 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
             )
         }
         else {
-            val sql = StringBuilder()
             val sqlParams = mutableListOf<String>()
-
-            sql.append("SELECT ")
-            if (sqlDistinct) sql.append("DISTINCT ")
-
-            sql.append(convertToCommaString(sqlColumns, true))
-            sql.append(" FROM `$tableName` ")
-
-            // JOIN
-            sql.append(when (sqlJoinType) {
-                JoinType.LEFT_OUTER -> "LEFT OUTER JOIN "
-                JoinType.CROSS -> "CROSS JOIN "
-                else -> "INNER JOIN "
-            })
-            sql.append(convertToCommaString(sqlJoinTables, true))
-            sql.append(" ON $sqlJoinOn ")
-            for (ja in sqlJoinOnArgs) sqlParams.add(ja)
-
-            // WHERE
-            sqlWhere?.let {
-                sql.append(" WHERE $it ")
-                for (wa in sqlWhereArgs) sqlParams.add(wa)
-            }
-
-            // GROUP BY
-            sqlGroupByRaw?.let {
-                sql.append(" GROUP BY $it ")
-            }
-
-            // HAVING
-            sqlHaving?.let {
-                sql.append(" HAVING $it ")
-            }
-
-            // ORDER BY
-            sqlOrderByRaw?.let {
-                sql.append(" ORDER BY $it ")
-            }
-
-            // LIMIT
-            limitStr?.let {
-                sql.append(" LIMIT $it ")
-            }
-
-            cur = db.rawQuery(sql.toString(), sqlParams.toTypedArray())
+            val sql = makeQueryString(sqlParams)
+            cur = db.rawQuery(sql, sqlParams.toTypedArray())
         }
 
         return cur
