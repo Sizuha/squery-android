@@ -450,17 +450,37 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
 
     fun count(): Long {
         val sqlParams = mutableListOf<String>()
-        val sql = makeQueryString(sqlParams)
+        val sql = makeQueryString(true, sqlParams)
         return DatabaseUtils.longForQuery(db, sql, sqlParams.toTypedArray())
     }
 
-    private fun makeQueryString(outSqlParams: MutableList<String>): String {
+    private fun prepareForQuery() {
+        if (sqlColumns.isEmpty()) {
+            sqlColumns = getAllColumns()
+        }
+
+        if (sqlGroupBy.isNotEmpty()) {
+            sqlGroupByRaw = convertToCommaString(sqlGroupBy, true)
+        }
+
+        if (sqlOrderBy.isNotEmpty()) {
+            sqlOrderByRaw = makeOrderByString()
+        }
+    }
+
+    private fun makeQueryString(forCount: Boolean, outSqlParams: MutableList<String>): String {
+        prepareForQuery()
         val sql = StringBuilder()
 
         sql.append("SELECT ")
         if (sqlDistinct) sql.append("DISTINCT ")
 
-        sql.append(convertToCommaString(sqlColumns, true))
+        if (forCount) {
+            sql.append("count(*)")
+        }
+        else {
+            sql.append(convertToCommaString(sqlColumns, true))
+        }
         sql.append(" FROM `$tableName` ")
 
         // JOIN
@@ -512,25 +532,10 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         if (cols.isNotEmpty()) columns(*cols)
 
         val cur: Cursor?
-        var limitStr: String? = null
-
-        if (sqlColumns.isEmpty()) {
-            sqlColumns = getAllColumns()
-        }
-
-        if (sqlGroupBy.isNotEmpty()) {
-            sqlGroupByRaw = convertToCommaString(sqlGroupBy, true)
-        }
-
-        if (sqlOrderBy.isNotEmpty()) {
-            sqlOrderByRaw = makeOrderByString()
-        }
-
-        if (sqlLimit > 0) {
-            limitStr = "$sqlLimitOffset,$sqlLimit"
-        }
 
         if (sqlJoinType == JoinType.NONE && sqlHavingArgs.isEmpty()) {
+            prepareForQuery()
+
             cur = db.query(
                 sqlDistinct,
                 tableName,
@@ -540,12 +545,12 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
                 sqlGroupByRaw,
                 sqlHaving,
                 sqlOrderByRaw,
-                limitStr
+                if (sqlLimit > 0) "$sqlLimitOffset,$sqlLimit" else null
             )
         }
         else {
             val sqlParams = mutableListOf<String>()
-            val sql = makeQueryString(sqlParams)
+            val sql = makeQueryString(false, sqlParams)
             cur = db.rawQuery(sql, sqlParams.toTypedArray())
         }
 
