@@ -24,8 +24,9 @@ class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context,
 }
 
 class User : ISQueryRow {
-    override val tableName = "user"
-    override fun createEmptyRow() = User()
+    companion object {
+        val tableName = "user"
+    }
 
     @Column("idx")
     @PrimaryKey(autoInc = true)
@@ -55,7 +56,6 @@ class DatabaseTest {
 
     private fun getContext() = InstrumentationRegistry.getTargetContext()
 
-    private val userTable = User()
     private val dateTimeFmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
     private fun openDB(): SQuery {
@@ -64,7 +64,7 @@ class DatabaseTest {
 
     private fun releaseDB() {
         openDB().use {
-            it.from(userTable).drop()
+            it.from(User.tableName).drop()
         }
     }
 
@@ -85,17 +85,17 @@ class DatabaseTest {
     @Throws(Exception::class)
     private fun createTableAndInsert() {
         openDB().use { db ->
-            db.from(userTable).drop()
-            db.createTable(User())
+            db.from(User.tableName).drop()
+            db.createTable(User.tableName, User())
 
-            val result = db.from(User().apply {
+            val result = db.from(User.tableName).insert(User().apply {
                 lastName = "Numakura"
                 firstName = "Manami"
                 birth = 19780415
-            }).insert()
+            })
             assertTrue(result)
 
-            val count = db.from(userTable).count()
+            val count = db.from(User.tableName).count()
             assertEquals(count, 1)
         }
     }
@@ -103,24 +103,23 @@ class DatabaseTest {
     @Throws(Exception::class)
     private fun findInsertedRow(): User {
         openDB().use { db ->
-            return db.from(userTable).selectOne()!!
+            return db.from(User.tableName).selectOne { User() }!!
         }
     }
 
     @Throws(Exception::class)
     private fun update(user: User) {
         openDB().use { db ->
-            val result = db.from(userTable)
-                    .values(ContentValues().apply {
+            val result = db.from(User.tableName)
+                    .update(ContentValues().apply {
                         put("idx", user.idx)
                         put("l_name", "沼倉")
                         put("f_name", "愛美")
                         put("birth", 19880415)
                     })
-                    .update()
             assertEquals(result, 1)
 
-            val count = db.from(userTable).where("birth=?", 19880415).count()
+            val count = db.from(User.tableName).where("birth=?", 19880415).count()
             assertEquals(count, 1)
         }
     }
@@ -128,9 +127,9 @@ class DatabaseTest {
     @Throws(Exception::class)
     private fun deleteAll() {
         openDB().use { db ->
-            db.from(userTable).delete()
+            db.from(User.tableName).delete()
 
-            val count = db.from(userTable).count()
+            val count = db.from(User.tableName).count()
             assertEquals(count, 0)
         }
     }
@@ -138,9 +137,6 @@ class DatabaseTest {
     //-------------- INSERT / UPDATE Test
 
     class WrongUser : ISQueryRow {
-        override val tableName: String = "user"
-        override fun createEmptyRow() = WrongUser()
-
         @Column("idx")
         var idx = 0
 
@@ -155,66 +151,65 @@ class DatabaseTest {
     @Throws(Exception::class)
     fun insertAndUpdateTest() {
         openDB().use { db ->
-            db.from(userTable).create()
+            db.from(User.tableName).create(User())
             var result = false
 
             //--- INSERT
 
             // row 1
-            result = db.from(User().apply {
+            result = db.from(User.tableName).insert(User().apply {
                 lastName = "Test"
                 firstName = "User"
                 birth = 19990101
                 email = "test@test.com"
-            }).insert()
+            })
             assertTrue(result)
 
             // row 2
-            result = db.from(userTable).values(User().apply {
+            result = db.from(User.tableName).insert(User().apply {
                 lastName = "Test"
                 firstName = "User"
                 birth = 19990101
                 email = "test@test.com"
-            }).insert()
+            })
             assertTrue(result)
 
             // row 3
             val regDateText = dateTimeFmt.format(dateTimeFmt.parse("1980-12-31 23:00:00"))
-            result = db.from(userTable).values(ContentValues().apply {
-                put("l_name", "Test")
-                put("f_name", "User")
-                put("birth", 19990101)
-                put("email", "test@test.com")
-                put("reg_date", regDateText)
-            }).insert()
+            result = db.from(User.tableName).insert(User().apply {
+                lastName = "Test"
+                firstName = "User"
+                birth = 19990101
+                email = "test@test.com"
+                registerDate = dateTimeFmt.parse("1980-12-31 23:00:00")
+            })
             assertTrue(result)
-            val rowCount = db.from(userTable).count()
+            val rowCount = db.from(User.tableName).count()
 
             // insert fail
-            result = db.from(WrongUser().apply {
+            result = db.from(User.tableName).insert(WrongUser().apply {
                 idx = 1
                 lastName = "ERROR"
                 firstName = "INSERT"
-            }).insert()
+            })
             assertFalse(result)
 
-            var resCount = db.from(userTable).where("l_name=?", "Test").count()
+            var resCount = db.from(User.tableName).where("l_name=?", "Test").count()
             assertEquals(resCount, rowCount)
 
-            resCount = db.from(userTable).where("reg_date=?", regDateText).count()
+            resCount = db.from(User.tableName).where("reg_date=?", regDateText).count()
             assertEquals(resCount, 1)
 
 
             //--- UPDATE
-            resCount = db.from(userTable)
+            resCount = db.from(User.tableName)
                     .where("l_name=?", "Test")
-                    .values(ContentValues().apply {
+                    .update(ContentValues().apply {
                         put("l_name", "TEST")
-                    })
-                    .update().toLong()
+                    }).toLong()
             assertEquals(resCount, rowCount)
 
-            resCount = db.from(userTable)
+            resCount = db.from(User.tableName)
                     .where("f_name=?", "User")
                     .update(ContentValues().apply {
                         put("f_name", "USER")

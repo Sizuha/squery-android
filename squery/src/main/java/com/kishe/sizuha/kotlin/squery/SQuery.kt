@@ -15,12 +15,12 @@ open class SQuery(context: Context, dbName: String, version: Int)
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {}
 
-    fun <T: ISQueryRow> from(table: T, writable: Boolean = true): TableQuery<T> {
-        return TableQuery(if (writable) writableDatabase else readableDatabase, table)
+    fun from(tableName: String, writable: Boolean = true): TableQuery {
+        return TableQuery(if (writable) writableDatabase else readableDatabase, tableName)
     }
 
-    fun createTable(table: ISQueryRow) {
-        from(table).create()
+    fun createTable(tableName: String, tableDef: Any) {
+        from(tableName).create(tableDef)
     }
 
     fun rawQuery(sql: String, args: Array<out String>): Cursor? {
@@ -30,9 +30,5 @@ open class SQuery(context: Context, dbName: String, version: Int)
     fun execute(sql: String, args: Array<out String>) {
         writableDatabase.execSQL(sql, args)
     }
-
-//    override fun close() {
-//        super.close()
-//    }
 
 }

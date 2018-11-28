@@ -2,7 +2,6 @@ package com.kishe.sizuha.kotlin.squery
 
 import android.content.ContentValues
 import android.database.Cursor
-import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import java.text.SimpleDateFormat
@@ -14,71 +13,16 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 
-class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val table: T) {
+class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tableName) {
 
-    private val tableName: String = table.tableName
-
-    // WHERE
-    private var sqlWhere = StringBuilder()
-    private var sqlWhereArgs = mutableListOf<String>()
-
-    private var sqlValues: ContentValues? = null
-
-    // for SELECT
-    private var sqlColumns = mutableListOf<String>()
-
-    private var sqlOrderByRaw: String? = null
-    private val sqlOrderBy = mutableListOf<Pair<String,Boolean>>()
-
-    // GROUP BY
-    private var sqlGroupByRaw: String? = null
-    private val sqlGroupBy = mutableListOf<String>()
-    private var sqlHaving: String? = null
-    private var sqlHavingArgs = mutableListOf<String>()
-
-    private var sqlLimit = 0
-    private var sqlLimitOffset = 0
-
-    private var sqlDistinct = false
-
-    // JOIN
-    private var sqlJoinType = JoinType.NONE
-    private var sqlJoinTables = mutableListOf<String>()
-    private var sqlJoinOn: String = ""
-    private var sqlJoinOnArgs = mutableListOf<String>()
-
-    fun reset(): TableQuery<T> {
-        sqlWhere.clear()
-        sqlWhereArgs.clear()
-
-        sqlValues = null
-
-        sqlColumns.clear()
-
-        sqlOrderByRaw = null
-        sqlOrderBy.clear()
-
-        sqlGroupByRaw = null
-        sqlGroupBy.clear()
-        sqlHaving = null
-        sqlHavingArgs.clear()
-
-        sqlLimit = 0
-        sqlLimitOffset = 0
-
-        sqlDistinct = false
-
-        sqlJoinType = JoinType.NONE
-        sqlJoinTables.clear()
-        sqlJoinOn = ""
-        sqlJoinOnArgs.clear()
-
+    fun reset(): TableQuery {
+        super.clear()
         return this
     }
 
-    fun getKeyFieldNames(): List<String> {
+    fun getKeyFieldNames(rowDef: Any): List<String> {
         val result = mutableListOf<String>()
-        for (member in table::class.memberProperties) {
+        for (member in rowDef::class.memberProperties) {
             member.findAnnotation<PrimaryKey>()?.let { _ ->
                 member.findAnnotation<Column>()?.let { column ->
                     result.add(column.name)
@@ -88,10 +32,10 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return result
     }
 
-    fun getKeyFields(): List<Column> {
+    fun getKeyFields(rowDef: Any): List<Column> {
         val result = mutableListOf<Column>()
 
-        table::class.memberProperties.filter {
+        rowDef::class.memberProperties.filter {
             it.annotations.firstOrNull { a -> a is PrimaryKey } != null
         }.sortedBy {
             it.findAnnotation<PrimaryKey>()?.seq ?: 1
@@ -102,7 +46,7 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return result
     }
 
-    private fun getDBColumnType(member: KProperty1<out ISQueryRow, Any?>): String {
+    private fun getDBColumnType(member: KProperty1<out Any, Any?>): String {
         return when (member.returnType) {
             Int::class.createType(),
             Int::class.javaPrimitiveType,
@@ -125,17 +69,17 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         }
     }
 
-    fun create(ifNotExists: Boolean = true) {
+    fun create(tableDef: Any, ifNotExists: Boolean = true) {
         val sql = StringBuilder()
         sql.append("CREATE TABLE ")
         if (ifNotExists) sql.append("IF NOT EXISTS ")
         sql.append("`$tableName` (")
 
         var isFirstCol = true
-        val pks = getKeyFields()
+        val pks = getKeyFields(tableDef)
         val isSinglePk = pks.size == 1
 
-        for (member in table::class.memberProperties) {
+        for (member in tableDef::class.memberProperties) {
             member.findAnnotation<Column>()?.let { col ->
                 if (isFirstCol) isFirstCol = false else sql.append(",")
 
@@ -183,149 +127,87 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         db.execSQL(sql.toString())
     }
 
-    fun drop() {
-        val sql = StringBuilder()
-        sql.append("DROP TABLE IF EXISTS `$tableName`;")
-        db.execSQL(sql.toString())
-    }
-
-    private fun makeWhereText(): String? =
-        if (sqlWhere.isNotEmpty()) sqlWhere.toString() else null
-
-    fun delete(): Int {
-        return db.delete(tableName, makeWhereText(), sqlWhereArgs.toTypedArray())
-    }
-
-    fun where(whereCond: String, vararg args: Any): TableQuery<T> {
-        sqlWhere.clear()
-        sqlWhere.append("($whereCond)")
-        for (a in args) { sqlWhereArgs.add(a.toString()) }
+    fun where(whereCond: String, vararg args: Any): TableQuery {
+        setWhere(whereCond, *args)
         return this
     }
 
-    fun whereWithList(whereCond: String, args: List<Any>): TableQuery<T> {
-        sqlWhere.clear()
-        sqlWhere.append("($whereCond)")
-        for (a in args) { sqlWhereArgs.add(a.toString()) }
+    fun whereWithList(whereCond: String, args: List<Any>): TableQuery {
+        setWhereWithList(whereCond, args)
         return this
     }
 
-    fun whereAnd(whereCond: String, vararg args: Any): TableQuery<T> {
-        if (sqlWhere.isNotEmpty()) sqlWhere.append(" AND ")
-        sqlWhere.append("($whereCond)")
-        for (a in args) { sqlWhereArgs.add(a.toString()) }
+    fun whereAnd(whereCond: String, vararg args: Any): TableQuery {
+        pushWhereAnd(whereCond, args)
         return this
     }
 
-    fun orderBy(field: String, asc: Boolean = true): TableQuery<T> {
-        sqlOrderBy.add(Pair(field, asc))
+    fun orderBy(field: String, asc: Boolean = true): TableQuery {
+        pushOrderBy(field, asc)
         return this
     }
 
-    fun orderByRaw(orderBy: String): TableQuery<T> {
-        sqlOrderBy.clear()
-        sqlOrderByRaw = orderBy
+    fun orderByRaw(orderBy: String): TableQuery {
+        setOrderBy(orderBy)
         return this
     }
 
-    fun groupBy(field: String): TableQuery<T> {
-        sqlGroupBy.add(field)
+    fun groupBy(field: String): TableQuery {
+        pushOrderBy(field)
         return this
     }
 
-    fun groupByRaw(groupBy: String): TableQuery<T> {
-        sqlGroupBy.clear()
-        sqlGroupByRaw = groupBy
+    fun groupByRaw(groupBy: String): TableQuery {
+        setOrderBy(groupBy)
         return this
     }
 
-    fun having(havingStr: String, vararg args: String): TableQuery<T> {
-        sqlHaving = havingStr
-        sqlHavingArgs.addAll(args)
+    fun having(havingStr: String, vararg args: String): TableQuery {
+        setHaving(havingStr, *args)
         return this
     }
 
-    fun distinct(enable: Boolean = true): TableQuery<T> {
-        sqlDistinct = enable
+    fun distinct(enable: Boolean = true): TableQuery {
+        setDistinct(enable)
         return this
     }
 
-    fun limit(count: Int, offset: Int = 0): TableQuery<T> {
-        sqlLimit = count
-        sqlLimitOffset = offset
+    fun limit(count: Int, offset: Int = 0): TableQuery {
+        setLimit(count, offset)
         return this
     }
 
-    private fun getAllColumns(withoutKey: Boolean = false/*, withTableName: Boolean = false*/): MutableList<String> {
+    /*private fun getAllColumns(withoutKey: Boolean = false): MutableList<String> {
         val result = mutableListOf<String>()
 
         for (member in table::class.memberProperties) {
             member.findAnnotation<Column>()?.let { column ->
                 val pk = member.findAnnotation<PrimaryKey>()
                 if (!withoutKey || pk?.autoInc != true ) {
-                    result.add(/*if (withTableName) "$tableName.${column.name}" else*/ column.name)
+                    result.add(column.name)
                 }
             }
         }
 
         return result
-    }
+    }*/
 
-    fun columns(vararg cols: String/*, addTableName: Boolean = false*/): TableQuery<T> {
-        sqlColumns.clear()
-
-        for (c in cols) {
-            sqlColumns.add(/*if (addTableName) "$tableName.$c" else*/ c)
-        }
-
+    fun columns(vararg cols: String): TableQuery {
+        setColumns(*cols)
         return this
     }
 
-    private fun convertToCommaString(source: Iterable<String>, withFieldQuote: Boolean = false): String {
-        val buff = StringBuilder()
-
-        var isFirst = true
-        for (s in source) {
-            if (isFirst) isFirst = false else buff.append(",")
-            buff.append(if (withFieldQuote) "`$s`" else s)
-        }
-
-        return buff.toString()
-    }
-
-    private fun makeOrderByString(): String {
-        val buff = StringBuilder()
-
-        var isFirst = true
-        for (op in sqlOrderBy) {
-            if (isFirst) isFirst = false else buff.append(",")
-            buff.append(op.first)
-            if (!op.second) buff.append(" DESC")
-        }
-
-        return buff.toString()
-    }
-
-    fun innerJoin(tables: List<String>, joinOn: String, args: List<String>) {
+    fun innerJoin(tables: List<String>, joinOn: String, args: List<String>): TableQuery {
         join(JoinType.INNER, tables, joinOn, args)
+        return this
     }
-    fun leftOuterJoin(tables: List<String>, joinOn: String, args: List<String>) {
+    fun leftOuterJoin(tables: List<String>, joinOn: String, args: List<String>): TableQuery {
         join(JoinType.LEFT_OUTER, tables, joinOn, args)
+        return this
     }
-    fun crossJoin(tables: List<String>, joinOn: String, args: List<String>) {
+    fun crossJoin(tables: List<String>, joinOn: String, args: List<String>): TableQuery {
         join(JoinType.CROSS, tables, joinOn, args)
-    }
-
-    private fun join(joinType: JoinType, tables: List<String>, joinOn: String, args: List<String>) {
-        sqlJoinType = joinType
-
-        sqlJoinTables.clear()
-        sqlJoinTables.addAll(tables)
-
-        sqlJoinOn = joinOn
-
-        sqlJoinOnArgs.clear()
-        sqlJoinOnArgs.addAll(args)
+        return this
     }
 
     private fun findMemberInClass(tableObj: ISQueryRow, fieldName: String) =
@@ -448,125 +330,21 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
 
     //------- SELECT -------//
 
-    fun count(): Long {
-        val sqlParams = mutableListOf<String>()
-        val sql = makeQueryString(true, sqlParams)
-        return DatabaseUtils.longForQuery(db, sql, sqlParams.toTypedArray())
-    }
-
-    private fun prepareForQuery() {
-        if (sqlColumns.isEmpty()) {
-            sqlColumns = getAllColumns()
-        }
-
-        if (sqlGroupBy.isNotEmpty()) {
-            sqlGroupByRaw = convertToCommaString(sqlGroupBy, true)
-        }
-
-        if (sqlOrderBy.isNotEmpty()) {
-            sqlOrderByRaw = makeOrderByString()
-        }
-    }
-
-    private fun makeQueryString(forCount: Boolean, outSqlParams: MutableList<String>): String {
-        prepareForQuery()
-        val sql = StringBuilder()
-
-        sql.append("SELECT ")
-        if (sqlDistinct) sql.append("DISTINCT ")
-
-        if (forCount) {
-            sql.append("count(*)")
-        }
-        else {
-            sql.append(convertToCommaString(sqlColumns, true))
-        }
-        sql.append(" FROM `$tableName` ")
-
-        // JOIN
-        if (sqlJoinType == JoinType.NONE) {
-            sql.append(when (sqlJoinType) {
-                JoinType.LEFT_OUTER -> "LEFT OUTER JOIN "
-                JoinType.CROSS -> "CROSS JOIN "
-                else -> "INNER JOIN "
-            })
-            sql.append(convertToCommaString(sqlJoinTables, true))
-            sql.append(" ON $sqlJoinOn ")
-
-            outSqlParams.addAll(sqlJoinOnArgs)
-        }
-
-        // WHERE
-        if (sqlWhere.isNotEmpty()) {
-            sql.append(" WHERE ")
-            sql.append(sqlWhere)
-
-            outSqlParams.addAll(sqlWhereArgs)
-        }
-
-        // GROUP BY
-        sqlGroupByRaw?.let { groupBy ->
-            sql.append(" GROUP BY $groupBy ")
-
-            // HAVING
-            if (!sqlHaving.isNullOrEmpty()) {
-                sql.append(" HAVING $sqlHaving ")
-                outSqlParams.addAll(sqlHavingArgs)
-            }
-        }
-
-        // ORDER BY
-        sqlOrderByRaw?.let {
-            sql.append(" ORDER BY $it ")
-        }
-
-        // LIMIT
-        if (sqlLimit > 0) {
-            sql.append(" LIMIT $sqlLimitOffset,$sqlLimit")
-        }
-
-        return sql.toString()
-    }
-
-    fun selectAsCursor(vararg cols: String): Cursor? {
-        if (cols.isNotEmpty()) columns(*cols)
-
-        val cur: Cursor?
-
-        if (sqlJoinType == JoinType.NONE && sqlHavingArgs.isEmpty()) {
-            prepareForQuery()
-
-            cur = db.query(
-                sqlDistinct,
-                tableName,
-                sqlColumns.toTypedArray(),
-                makeWhereText(),
-                sqlWhereArgs.toTypedArray(),
-                sqlGroupByRaw,
-                sqlHaving,
-                sqlOrderByRaw,
-                if (sqlLimit > 0) "$sqlLimitOffset,$sqlLimit" else null
-            )
-        }
-        else {
-            val sqlParams = mutableListOf<String>()
-            val sql = makeQueryString(false, sqlParams)
-            cur = db.rawQuery(sql, sqlParams.toTypedArray())
-        }
-
-        return cur
-    }
-
-    fun select(): MutableList<T> {
-        return selectWithCursor { cursor ->
-            convertFromCursor(cursor) {
-                table.createEmptyRow() as T
-            }
-        }
-    }
-
     fun <R: ISQueryRow> select(factory: ()->R): MutableList<R> {
         return selectWithCursor { cur -> convertFromCursor(cur, factory) }
+    }
+
+    fun <R: ISQueryRow> selectOne(factory: ()->R): R? {
+        setLimit(1)
+        select(factory).forEach { row -> return row }
+        return null
+    }
+
+    inline fun <R: ISQueryRow> selectForEach(noinline factory: ()->R, crossinline each: (row: R)->Unit) {
+        selectForEachCursor {
+            val row = convertFromCursor(it, factory)
+            each(row)
+        }
     }
 
     fun <R: ISQueryRow> convertFromCursor(cursor: Cursor, factory: ()->R): R {
@@ -580,64 +358,17 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
             }
         }
         row.loadFrom(cursor)
-
         return row
-    }
-
-    fun <R> selectWithCursor(factory: (cursor: Cursor)->R): MutableList<R> {
-        val rows = mutableListOf<R>()
-
-        return selectAsCursor().use { cur ->
-            if (cur == null) return rows
-            while (cur.moveToNext()) {
-                val row = factory(cur)
-                rows.add(row)
-            }
-            rows
-        }
-    }
-
-    fun selectOne(): T? {
-        return selectOne {
-            table.createEmptyRow() as T
-        }
-    }
-
-    fun <R: ISQueryRow> selectOne(factory: ()->R): R? {
-        limit(1)
-        select(factory).forEach { row -> return row }
-        return null
-    }
-
-    fun <R> selectOneWithCursor(factory: (cursor: Cursor)->R): R? {
-        limit(1)
-        return selectWithCursor { cur -> factory(cur) }.firstOrNull()
-    }
-
-    fun selectForEachCursor(each: (cursor: Cursor)->Unit) {
-        selectAsCursor().use { cur ->
-            if (cur == null) return
-            while (cur.moveToNext()) each(cur)
-        }
-    }
-
-    fun selectForEach(each: (row: T)->Unit) {
-        selectForEach({ table.createEmptyRow() as T }, each)
-    }
-
-    inline fun <R: ISQueryRow> selectForEach(noinline factory: ()->R, crossinline each: (row: R)->Unit) {
-        selectForEachCursor {
-            val row = convertFromCursor(it, factory)
-            each(row)
-        }
     }
 
     //------- VALUES -------//
 
-    fun values(row: ISQueryRow): TableQuery<T> {
-        sqlValues = row.toValues() ?: ContentValues()
+    private fun setValues(row: Any) {
+        sqlValues = if (row is ISQueryRow)
+            row.toValues() ?: ContentValues()
+        else ContentValues()
 
-        for (member in table::class.memberProperties) {
+        for (member in row::class.memberProperties) {
             val column = member.findAnnotation<Column>() ?: continue
             if (column.exclude) continue
 
@@ -712,22 +443,15 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
 
             member.isAccessible = accessible
         }
-
-        return this
-    }
-
-    fun values(data: ContentValues): TableQuery<T> {
-        sqlValues = data
-        return this
     }
 
     //------- INSERT -------//
-    fun insert(): Boolean {
+    fun insert(row: Any): Boolean {
         printLog("try: INSERT")
 
-        if (sqlValues == null) values(table)
+        setValues(row)
 
-        table::class.memberProperties.firstOrNull {
+        row::class.memberProperties.firstOrNull {
             it.annotations.firstOrNull { a -> a is PrimaryKey && a.autoInc } != null
         }?.let {
             val column = it.annotations.firstOrNull { a -> a is Column } as? Column
@@ -754,20 +478,12 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         }
     }
 
-    fun insert(row: ISQueryRow): Boolean {
-        return values(row).insert()
-    }
-
-    fun insert(data: ContentValues): Boolean {
-        return values(data).insert()
-    }
-
     //------- UPDATE -------//
-    fun update(autoMakeWhere: Boolean = true): Int {
+    fun update(row: Any, autoMakeWhere: Boolean = true): Int {
         printLog("try: UPDATE")
 
-        val keys = getKeyFields().map { it.name }
-        if (sqlValues == null) values(table)
+        val keys = getKeyFields(row).map { it.name }
+        setValues(row)
 
         if (autoMakeWhere && sqlWhere.isEmpty()) {
             for (k in keys) {
@@ -779,6 +495,10 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
             keys.contains(it.key) /*|| keys.contains("$tableName.${it.key}")*/
         }
 
+        return update()
+    }
+
+    private fun update(): Int {
         val whereText = makeWhereText()
         if (Config.enableDebugLog) {
             printLog("where: $whereText")
@@ -787,39 +507,19 @@ class TableQuery<T: ISQueryRow>(private val db: SQLiteDatabase, private val tabl
         return db.update(tableName, sqlValues, whereText, sqlWhereArgs.toTypedArray())
     }
 
-    fun update(row: ISQueryRow): Int {
-        return values(row).update()
-    }
-
     fun update(data: ContentValues): Int {
-        return values(data).update()
+        setValues(data)
+        return update()
     }
 
     //------- INSERT or UPDATE -------//
-    fun insertOrUpdate(): Boolean {
-        return insert() || update() > 0
-    }
-
-    fun insertOrUpdate(row: ISQueryRow): Boolean {
-        return values(row).insertOrUpdate()
-    }
-
-    fun insertOrUpdate(data: ContentValues): Boolean {
-        return values(data).insertOrUpdate()
+    fun insertOrUpdate(row: Any): Boolean {
+        return insert(row) || update(row) > 0
     }
 
     //------- UPDATE or INSERT -------//
-    private fun updateOrInsert(): Boolean {
-        return if (sqlValues == null) updateOrInsert(table) else updateOrInsert(sqlValues!!)
-    }
-
     fun updateOrInsert(row: ISQueryRow): Boolean {
         return update(row) > 0 || insert(row)
-    }
-
-    fun updateOrInsert(data: ContentValues): Boolean {
-        val valuesForInsert = ContentValues().apply { putAll(sqlValues) }
-        return update(data) > 0 || insert(valuesForInsert)
     }
 
 }
