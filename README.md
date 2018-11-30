@@ -4,7 +4,7 @@ Simple Query Library for SQLite (Android/Kotlin)
 開発中...
 Now Developing
 
-* 最新Version: 1.0.8
+* 最新Version: 1.0.9
 * 注意：開発中のライブラリーなので、まだ充分なテストができていません。
 
 
@@ -49,16 +49,8 @@ class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context,
 ```
 
 ## Tableの定義
-SQueryでは、Tableの定義と行(row)データの扱いに「ISQueryRow」 interfaceを使う。
+annotationでテーブルの定義ができる。
 
-ISQueryRowを具現し、テーブル名を指定する。
-```kotlin
-class SampleTable : ISQueryRow {    
-    override val tableName = "テーブル名"
-}
-```
-
-次は各フィルド(column)を定義する。フィルド名、キー、Not Nullなどを「@Column」annotationで定義する。
 ```kotlin
 @Column("フィルド名", notNull=false, unique=false)
 var fieldVar: kotlinDataType
@@ -78,9 +70,11 @@ var fieldVar: kotlinDataType
 
 例)
 ```kotlin
-class SampleTable : ISQueryRow {    
+class SampleTable {    
     // DB上のテーブル名
-    override val tableName = "sample"
+    companion object {
+        val tableName = "sample"
+    }
         
     // 空の自分Typeのオブジェクトを返す
     override fun createEmptyRow() = SampleTable()
@@ -181,10 +175,8 @@ CREATE TABLE anime (
 );
 ```
 ```kotlin
-class Anime() : ISQueryRow {
-    override val tableName = "anime"
-    
-    override fun createEmptyRow() = Anime()
+class Anime() {
+    companion object { val tableName = "anime" }
 
     @Column("idx")
     @PrimaryKey(autoInc = true)
@@ -265,21 +257,19 @@ SQueryは単純なケースのQueryをなるべく自動かするのが目標な
 ```kotlin
 val db = SQuery(this, "anime.db", DB_VER /* 1 */ )
 
-db.from(Anime()).create(true) // true = IF NOT EXISTS
-// 又は
-db.createTable(Anime())
+db.from(Anime.tableName).create(Anime(), true) // true = IF NOT EXISTS
 ```
 
 ## Delete
 ```kotlin
 // SQL> DROP TABLE anime;
-db.from(Anime()).drop()
+db.from(Anime.tableName).drop()
 
 // SQL> DELETE FROM anime;
-db.from(Anime()).delete()
+db.from(Anime.tableName).delete()
 
 // SQL> DELETE FROM anime WHERE start_date < 200001;
-db.from(Anime()).where("start_date < ?", 200001).delete()
+db.from(Anime.tableName).where("start_date < ?", 200001).delete()
 ```
 
 ## Insert
@@ -293,10 +283,8 @@ val row = Anime().apply {
     total = 1
     startDate = 20181001
 }
-db.from(Anime()).values(row).insert()
-
-// 又は
-db.from(row).insert()
+// AUTOINCREMENTのフィルドは自動で外される。
+db.from(Anime.tableName).insert(row)
 
 // 又は
 val data = ContentValues().apply { 
@@ -305,9 +293,8 @@ val data = ContentValues().apply {
     put("fin", false)
     // . . .
 }
-db.from(Anime()).values(data).insert()
+db.from(Anime.tableName).insert(data)
 ```
-AUTOINCREMENTのフィルドは自動で外される。
 
 ## Update
 ```kotlin
@@ -317,16 +304,13 @@ AUTOINCREMENTのフィルドは自動で外される。
 val row = Anime().apply { 
     // . . .
 }
-db.from(Anime()).values(row).update()
-
-// 又は
-db.from(row).update()
+db.from(Anime.tableName).update(row)
 
 // 又は
 val data = ContentValues().apply { 
     // . . .
 }
-db.from(Anime()).values(data).update()
+db.from(Anime.tableName).update(data)
 ```
 where()を省略した場合、自動でWHERE句が追加される。この場合、主キー(Primary Key)を使ってWHERE句を作成する。
 自動でWHERE句を作成したくない場合は、`update(false)`のように使える。
@@ -340,13 +324,10 @@ where()を省略した場合、自動でWHERE句が追加される。この場�
 val row = Anime().apply { 
     // . . .
 }
-db.from(row).where("idx=?", row.idx).insertOrUpdate()
+db.from(Anime.tableName).where("idx=?", row.idx).insertOrUpdate(row)
 
 // 又は (WHERE句を自動で作成する)
-db.from(row).insertOrUpdate()
-
-// 又は
-db.from(Anime()).values(row).where("idx=?", row.idx).insertOrUpdate()
+db.from(Anime.tableName).insertOrUpdate(row)
 ```
 
 ## Update or Insert
@@ -355,22 +336,19 @@ db.from(Anime()).values(row).where("idx=?", row.idx).insertOrUpdate()
 val row = Anime().apply { 
     // . . .
 }
-db.from(row).where("idx=?", row.idx).updateOrInsert()
+db.from(Anime.tableName).where("idx=?", row.idx).updateOrInsert(row)
 
 // 又は (WHERE句を自動で作成する)
-db.from(row).insertOrUpdate()
-
-// 又は
-db.from(Anime()).values(row).where("idx=?", row.idx).updateOrInsert()
+db.from(Anime.tableName).insertOrUpdate(row)
 ```
 
 ## Select
 ```kotlin
 // SQL> SELECT * FROM anime;
-val rows = db.from(Anime()).select() // return: MutableList<Anime>
+val rows = db.from(Anime.tableName).select { Anime() } // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1;
-val rows = db.from(Anime()).where("fin=?",1).select() // return: MutableList<Anime>
+val rows = db.from(Anime.tableName).where("fin=?",1).select { Anime()} // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title;
 val rows = db.from(Anime())
@@ -380,39 +358,32 @@ val rows = db.from(Anime())
     .select() // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title LIMIT 0,10;
-val rows = db.from(Anime())
+val rows = db.from(Anime.tableName)
     .where("fin=?",1)
     .orderBy("start_date", false)
     .orderBy("title")
     .limit(10,0)
-    .select() // return: MutableList<Anime>
+    .select { Anime() } // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE idx=100 LIMIT 1;
-val rows = db.from(Anime())
+val rows = db.from(Anime.tableName)
     .where("idx=?",100)
     .limit(1)
-    .select() // return: MutableList<Anime>
+    .select { Anime() } // return: MutableList<Anime>
 // 又は
-val row = db.from(Anime()).where("idx=?",100).selectOne() // return: Anime or null
+val row = db.from(Anime.tableName).where("idx=?",100).selectOne { Anime() } // return: Anime or null
 
 // SQL> SELECT title FROM anime WHERE start_date < 200001;
-class AnimeTitle() : ISQueryRow {
-    override val tableName: String
-        get() = "anime"
-
-    override fun createEmptyRow() = AnimeTitle()
+class AnimeTitle() {
+    companion object { val tableName = "anime" }
     
     @Column("title", notNull=true)
     var title: String
 }
-val rows = db.from(Anime())
+val rows = db.from(AnimeTitle.tableName)
     .columns("title")
     .where("start_date < ?", 200001)
     .select { AnimeTitle() }
-// 又は
-val rows = db.from(AnimeTitle())
-    .where("start_date < ?", 200001)
-    .select()
 ```
 他にも、`groupBy()`、`having()`、`distinct()`なども使える。
 
@@ -421,21 +392,21 @@ JOIN機能はまだテスト中。
 ### 結果をCursorで返す
 ```kotlin
 // SQL> SELECT * FROM anime WHERE fin=0;
-val cursor = db.from(Anime()).where("fin=?",0).selectAsCursor() // return: Cursor
+val cursor = db.from(Anime.tableName).where("fin=?",0).selectAsCursor() // return: Cursor
 cursor.use {
 // . . .
 }
 
 // SQL> SELECT title, progress, total FROM anime WHERE fin=0;
-val cursor = db.from(Anime()).columns("title","progress","total").where("fin=?",0).selectAsCursor()
+val cursor = db.from(Anime.tableName).columns("title","progress","total").where("fin=?",0).selectAsCursor()
 // 又は
-val cursor = db.from(Anime()).where("fin=?",0).selectAsCursor("title","progress","total")
+val cursor = db.from(Anime.tableName).where("fin=?",0).selectAsCursor("title","progress","total")
 ```
 
 ### 手動でCursorからオブジェクトに変換
 ```kotlin
 // SQL> SELECT title, progress, total FROM anime WHERE fin=0;
-val rows = db.from(Anime())
+val rows = db.from(Anime.tableName)
     .columns("title","progress","total")
     .where("fin=?",0)
     .selectWithCursor { cursor -> 
@@ -460,7 +431,7 @@ val rows = db.from(Anime())
 ### ForEach
 ```kotlin
 // SQL> SELECT * FROM anime;
-db.from(Anime()).selectForEach { row -> // row: Anime
+db.from(Anime.tableName).selectForEach({ Anime() }) { row -> // row: Anime
     row.run {
     // . . .
     }
@@ -478,25 +449,23 @@ db.from(Anime()).selectForEachCursor { cursor ->
 WHERE句で条件をANDでつなげる事がよくある。この場合`whereAnd()`メソッドが使える。
 ```kotlin
 // SQL> SELECT * FROM anime WHERE (fin=0) AND (media=1) AND (start_date>200000);
-val rows = db.from(Anime())
+val rows = db.from(Anime.tableName)
     .where("fin=?", 0)
     .whereAnd("media=?", 1)
     .whereAnd("start_date>?", 200000)
-    .select()
+    .select { Anime() }
 // 又は    
-val rows = db.from(Anime())
+val rows = db.from(Anime.tableName)
     .whereAnd("fin=?", 0)
     .whereAnd("media=?", 1)
     .whereAnd("start_date>?", 200000)
-    .select()
+    .select { Anime() }
 ```
 
 ## ISQueryRowクラスの「読み込み・書き込み」をカスタマイズ
 ```kotlin
 class Anime() : ISQueryRow {
-    override val tableName = "anime"
-        
-    override fun createEmptyRow() = Anime()
+    companion object { val tableName = "anime" }
 
     // ...省略...
     
