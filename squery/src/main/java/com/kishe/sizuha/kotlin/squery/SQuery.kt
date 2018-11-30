@@ -33,8 +33,7 @@ open class SQuery(context: Context, dbName: String, version: Int)
     }
 
     fun queryForLong(sql: String, args: Array<out String>): Long {
-        DatabaseUtils.longForQuery(readableDatabase, sql, args)
-        return 0
+        return DatabaseUtils.longForQuery(readableDatabase, sql, args)
     }
 
 }
