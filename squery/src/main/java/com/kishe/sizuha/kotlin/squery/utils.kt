@@ -157,6 +157,22 @@ fun getKeyFieldNames(rowDef: Any): List<String> {
     return result
 }
 
+/*fun getAllColumns(withoutKey: Boolean = false): MutableList<String> {
+    val result = mutableListOf<String>()
+
+    for (member in table::class.memberProperties) {
+        member.findAnnotation<Column>()?.let { column ->
+            val pk = member.findAnnotation<PrimaryKey>()
+            if (!withoutKey || pk?.autoInc != true ) {
+                result.add(column.name)
+            }
+        }
+    }
+
+    return result
+}*/
+
+
 fun getKeyFields(rowDef: Any): List<Column> {
     val result = mutableListOf<Column>()
 

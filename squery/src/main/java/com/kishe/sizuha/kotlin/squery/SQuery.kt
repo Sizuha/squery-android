@@ -2,6 +2,7 @@ package com.kishe.sizuha.kotlin.squery
 
 import android.content.Context
 import android.database.Cursor
+import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.io.Closeable
@@ -29,6 +30,11 @@ open class SQuery(context: Context, dbName: String, version: Int)
 
     fun execute(sql: String, args: Array<out String>) {
         writableDatabase.execSQL(sql, args)
+    }
+
+    fun queryForLong(sql: String, args: Array<out String>): Long {
+        DatabaseUtils.longForQuery(readableDatabase, sql, args)
+        return 0
     }
 
 }

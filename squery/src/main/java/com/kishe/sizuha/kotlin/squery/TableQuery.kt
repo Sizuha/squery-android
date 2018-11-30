@@ -125,21 +125,6 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
         return this
     }
 
-    /*private fun getAllColumns(withoutKey: Boolean = false): MutableList<String> {
-        val result = mutableListOf<String>()
-
-        for (member in table::class.memberProperties) {
-            member.findAnnotation<Column>()?.let { column ->
-                val pk = member.findAnnotation<PrimaryKey>()
-                if (!withoutKey || pk?.autoInc != true ) {
-                    result.add(column.name)
-                }
-            }
-        }
-
-        return result
-    }*/
-
     fun columns(vararg cols: String): TableQuery {
         setColumns(*cols)
         return this
