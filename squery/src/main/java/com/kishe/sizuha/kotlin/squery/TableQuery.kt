@@ -327,7 +327,7 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
     }
 
     //------- UPDATE or INSERT -------//
-    fun updateOrInsert(row: ISQueryRow): Boolean {
+    fun updateOrInsert(row: Any): Boolean {
         return update(row) > 0 || insert(row)
     }
 
