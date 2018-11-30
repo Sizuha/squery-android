@@ -92,7 +92,7 @@ abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val ta
                 sql.append(convertToCommaString(sqlColumns, true))
             }
         }
-        sql.append(" FROM `$tableName` ")
+        sql.append(" FROM $tableName ")
 
         // JOIN
         if (sqlJoinType != JoinType.NONE) {
