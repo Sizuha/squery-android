@@ -4,7 +4,6 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
-import kotlin.reflect.KMutableProperty
 
 abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val tableName: String) {
 
@@ -68,7 +67,7 @@ abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val ta
         sqlJoinOnArgs.clear()
     }
 
-    protected fun makeQueryString(forCount: Boolean, outSqlParams: MutableList<String>): String {
+    fun makeQueryString(forCount: Boolean, outSqlParams: MutableList<String>): String {
         val sql = StringBuilder()
 
         if (sqlGroupBy.isNotEmpty()) {
@@ -138,18 +137,6 @@ abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val ta
         }
 
         return sql.toString()
-    }
-
-    protected fun convertToCommaString(source: Iterable<String>, withFieldQuote: Boolean = false): String {
-        val buff = StringBuilder()
-
-        var isFirst = true
-        for (s in source) {
-            if (isFirst) isFirst = false else buff.append(",")
-            buff.append(if (withFieldQuote) "`$s`" else s)
-        }
-
-        return buff.toString()
     }
 
     protected fun makeOrderByString(): String {

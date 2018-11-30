@@ -15,8 +15,8 @@ open class SQuery(context: Context, dbName: String, version: Int)
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {}
 
-    fun from(tableName: String, writable: Boolean = true): TableQuery {
-        return TableQuery(if (writable) writableDatabase else readableDatabase, tableName)
+    fun from(table: String, writable: Boolean = true): TableQuery {
+        return TableQuery(if (writable) writableDatabase else readableDatabase, table)
     }
 
     fun createTable(tableName: String, tableDef: Any) {
