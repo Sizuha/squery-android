@@ -15,7 +15,7 @@ fun findMemberInClass(tableObj: Any, fieldName: String) =
             it.annotations.find { a -> a is Column && a.name == fieldName } != null
         }
 
-fun <R: ISQueryRow> convertFromCursor(cursor: Cursor, factory: ()->R): R {
+fun <R: Any> convertFromCursor(cursor: Cursor, factory: ()->R): R {
     val row = factory()
     for (idx in 0 until cursor.columnCount) {
         val colName = cursor.getColumnName(idx)
@@ -25,11 +25,14 @@ fun <R: ISQueryRow> convertFromCursor(cursor: Cursor, factory: ()->R): R {
             }
         }
     }
-    row.loadFrom(cursor)
+
+    if (row is ISQueryRow) {
+        row.loadFrom(cursor)
+    }
     return row
 }
 
-private fun setToProperty(colIdx: Int, tableObj: ISQueryRow, member: KMutableProperty<*>, cursor: Cursor) {
+private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*>, cursor: Cursor) {
     val column = member.findAnnotation<Column>()
     if (column?.exclude == true) return
 
