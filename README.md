@@ -462,7 +462,7 @@ val rows = db.from(Anime.tableName)
     .select { Anime() }
 ```
 
-## ISQueryRowクラスの「読み込み・書き込み」をカスタマイズ
+## 「読み込み・書き込み」をカスタマイズ
 ```kotlin
 class Anime() : ISQueryRow {
     companion object { val tableName = "anime" }
