@@ -204,7 +204,7 @@ fun getDBColumnType(member: KProperty1<out Any, Any?>): String {
         -> "REAL"
 
         ByteArray::class.createType()
-        -> "BLOB"
+        -> "NONE"
 
         else -> "TEXT"
     }
