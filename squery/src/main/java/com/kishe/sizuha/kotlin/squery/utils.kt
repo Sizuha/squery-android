@@ -203,10 +203,11 @@ fun getDBColumnType(member: KProperty1<out Any, Any?>): String {
         Double::class.javaPrimitiveType
         -> "REAL"
 
-        ByteArray::class.createType()
-        -> "NONE"
+        String::class.createType(),
+        String::class.javaPrimitiveType
+        -> "TEXT"
 
-        else -> "TEXT"
+        else -> "NONE"
     }
 }
 
