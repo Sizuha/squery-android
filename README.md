@@ -122,6 +122,7 @@ var second = 0
 ### 日付、時間フィルド
 #### TEXT(DB) to Date(Kotlin)
 ```kotlin
+@Column("date")
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Date? = null
 ```
