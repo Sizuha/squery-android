@@ -76,9 +76,6 @@ class SampleTable {
         val tableName = "sample"
     }
         
-    // 空の自分Typeのオブジェクトを返す
-    override fun createEmptyRow() = SampleTable()
-
     // name TEXT NOT NULL
     @Column("name", notNull = true)
     var userName: String = ""
