@@ -127,31 +127,37 @@ var dateField: Date? = null
 ```
 #### TEXT to Calendar
 ```kotlin
+@Column("date")
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Calendar? = null
 ```
 #### TEXT to Int
 ```kotlin
+@Column("date")
 @DateType("yyyyMMdd", timezone="")
 var dateField: Int = 0 // yyyyMMdd ex) "20021231" -> 20021231
 ```
 #### TEXT to Long(time stamp)
 ```kotlin
+@Column("date")
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Long = 0
 ```
 #### Timestamp(INTEGER) to Long
 ```kotlin
+@Column("date")
 @TimeStamp(timezone="")
 var dateField: Long = 0
 ```
 #### Timestamp(INTEGER) to Date
 ```kotlin
+@Column("date")
 @TimeStamp(timezone="")
 var dateField: Date? = null
 ```
 #### Timestamp(INTEGER) to Calendar
 ```kotlin
+@Column("date")
 @TimeStamp(timezone="")
 var dateField: Calendar? = null
 ```
