@@ -123,7 +123,7 @@ var second = 0
 #### TEXT(DB) to Date(Kotlin)
 ```kotlin
 @Column("date")
-@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="") // timezoneは省略可
 var dateField: Date? = null
 ```
 #### TEXT to Calendar
@@ -352,13 +352,6 @@ val rows = db.from(Anime.tableName).select { Anime() } // return: MutableList<An
 
 // SQL> SELECT * FROM anime WHERE fin=1;
 val rows = db.from(Anime.tableName).where("fin=?",1).select { Anime()} // return: MutableList<Anime>
-
-// SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title;
-val rows = db.from(Anime())
-    .where("fin=?",1)
-    .orderBy("start_date", false)
-    .orderBy("title")
-    .select() // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title LIMIT 0,10;
 val rows = db.from(Anime.tableName)
