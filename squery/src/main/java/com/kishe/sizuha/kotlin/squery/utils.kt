@@ -49,15 +49,14 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
                     else
                         TimeZone.getDefault()
                 }
-                val date = format.parse(str)
 
                 value = when (member.returnType) {
                     Date::class.createType(),
-                    Date::class.javaObjectType -> date
+                    Date::class.javaObjectType -> format.parse(str)
 
                     Calendar::class.createType(),
                     Calendar::class.javaObjectType -> {
-                        Calendar.getInstance().apply { time = date }
+                        Calendar.getInstance().apply { time = format.parse(str) }
                     }
 
                     // "yyyyMMdd" -> Int
@@ -70,7 +69,7 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
                     Long::class.createType(),
                     Long::class.javaPrimitiveType,
                     Long::class.javaObjectType
-                    -> date.time
+                    -> format.parse(str).time
 
                     else -> str
                 }
