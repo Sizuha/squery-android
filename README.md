@@ -249,10 +249,6 @@ SQueryは単純なケースのQueryをなるべく自動かするのが目標な
 #### CREATE TABLEで、AUTO INCREMENTの扱い
 * CREATE TABLEの時、`@PrimaryKey(autoInc=true)`のフィルドがある場合、これがテーブルの中で唯一の主キーであること。
 
-### 外部キー(FOREIGN KEY)
-* 外部キー(FOREIGN KEY)は基本的にサポートしない。
-* CREATE TABLEの場合は`SQuery`クラスの`execute()`メソッドで手動でクエリを作成。
-
 ## Create Table
 ```kotlin
 val db = SQuery(this, "anime.db", DB_VER /* 1 */ )
