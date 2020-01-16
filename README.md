@@ -76,9 +76,6 @@ class SampleTable {
         val tableName = "sample"
     }
         
-    // 空の自分Typeのオブジェクトを返す
-    override fun createEmptyRow() = SampleTable()
-
     // name TEXT NOT NULL
     @Column("name", notNull = true)
     var userName: String = ""
@@ -122,36 +119,43 @@ var second = 0
 ### 日付、時間フィルド
 #### TEXT(DB) to Date(Kotlin)
 ```kotlin
-@DateType("yyyy-MM-dd HH:mm:ss", timezone="")
+@Column("date")
+@DateType("yyyy-MM-dd HH:mm:ss", timezone="") // timezoneは省略可
 var dateField: Date? = null
 ```
 #### TEXT to Calendar
 ```kotlin
+@Column("date")
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Calendar? = null
 ```
 #### TEXT to Int
 ```kotlin
+@Column("date")
 @DateType("yyyyMMdd", timezone="")
 var dateField: Int = 0 // yyyyMMdd ex) "20021231" -> 20021231
 ```
 #### TEXT to Long(time stamp)
 ```kotlin
+@Column("date")
 @DateType("yyyy-MM-dd HH:mm:ss", timezone="")
 var dateField: Long = 0
 ```
 #### Timestamp(INTEGER) to Long
 ```kotlin
+@Column("date")
 @TimeStamp(timezone="")
 var dateField: Long = 0
 ```
 #### Timestamp(INTEGER) to Date
 ```kotlin
+@Column("date")
 @TimeStamp(timezone="")
 var dateField: Date? = null
 ```
 #### Timestamp(INTEGER) to Calendar
 ```kotlin
+@Column("date")
 @TimeStamp(timezone="")
 var dateField: Calendar? = null
 ```
@@ -345,13 +349,6 @@ val rows = db.from(Anime.tableName).select { Anime() } // return: MutableList<An
 
 // SQL> SELECT * FROM anime WHERE fin=1;
 val rows = db.from(Anime.tableName).where("fin=?",1).select { Anime()} // return: MutableList<Anime>
-
-// SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title;
-val rows = db.from(Anime())
-    .where("fin=?",1)
-    .orderBy("start_date", false)
-    .orderBy("title")
-    .select() // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title LIMIT 0,10;
 val rows = db.from(Anime.tableName)
