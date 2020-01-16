@@ -177,6 +177,12 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
             val accessible = member.isAccessible
             member.isAccessible = true
 
+            val rawValue = member.getter.call(row)
+            if (rawValue == null) {
+                sqlValues!!.putNull(column.name)
+                continue
+            }
+
             var pushed = false
             loop@ for (a in member.annotations) when (a) {
                 is DateType -> {
@@ -190,23 +196,26 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
                     val valueStr: String = when (member.returnType) {
                         // Long --> Date (DB, TEXT)
                         Long::class.createType(),
+                        Long::class.createType(nullable = true),
                         Long::class.javaPrimitiveType -> {
-                            val t = member.getter.call(row) as Long
+                            val t = rawValue as Long
                             format.format(Date().apply { time = t })
                         }
 
                         Date::class.createType(),
+                        Date::class.createType(nullable = true),
                         Date::class.javaObjectType -> {
-                            format.format(member.getter.call(row) as Date)
+                            format.format(rawValue as Date)
                         }
 
                         Calendar::class.createType(),
+                        Calendar::class.createType(nullable = true),
                         Calendar::class.javaObjectType -> {
-                            val date = (member.getter.call(row) as Calendar).time
+                            val date = (rawValue as Calendar).time
                             format.format(date)
                         }
 
-                        else -> member.getter.call(row).toString()
+                        else -> rawValue.toString()
                     }
                     sqlValues!!.put(column.name, valueStr)
                     pushed = true
@@ -217,16 +226,18 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
                     val stampVal: Long = when (member.returnType) {
                         // Date to Long (DB)
                         Date::class.createType(),
+                        Date::class.createType(nullable = true),
                         Date::class.javaObjectType -> {
-                            (member.getter.call(row) as Date).time
+                            (rawValue as Date).time
                         }
 
                         Calendar::class.createType(),
+                        Calendar::class.createType(nullable = true),
                         Calendar::class.javaObjectType -> {
-                            (member.getter.call(row) as Calendar).timeInMillis
+                            (rawValue as Calendar).timeInMillis
                         }
 
-                        else -> member.getter.call(row) as Long
+                        else -> rawValue as Long
                     }
                     sqlValues!!.put(column.name, stampVal)
                     pushed = true
@@ -236,11 +247,12 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
 
             if (!pushed) when (member.returnType) {
                 Boolean::class.createType(),
+                Boolean::class.createType(nullable = true),
                 Boolean::class.javaPrimitiveType,
                 Boolean::class.javaObjectType -> {
-                    sqlValues!!.put(column.name, if (member.getter.call(row) as Boolean) 1 else 0)
+                    sqlValues!!.put(column.name, if (rawValue as Boolean) 1 else 0)
                 }
-                else -> sqlValues!!.put(column.name, member.getter.call(row).toString())
+                else -> sqlValues!!.put(column.name, rawValue.toString())
             }
 
             member.isAccessible = accessible

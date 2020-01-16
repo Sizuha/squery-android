@@ -9,6 +9,7 @@ import kotlin.reflect.full.createType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
+import kotlin.reflect.jvm.javaType
 
 fun findMemberInClass(tableObj: Any, fieldName: String) =
         tableObj::class.memberProperties.firstOrNull {
@@ -38,8 +39,8 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
 
     var value: Any? = null
 
-    val notNull = column?.notNull == true || !member.returnType.isMarkedNullable
-    if (notNull || !cursor.isNull(colIdx)) {
+    val isNull = cursor.isNull(colIdx)
+    if (!isNull) {
         loop@ for (a in member.annotations) when (a) {
             is DateType -> {
                 val str = cursor.getString(colIdx)
@@ -52,6 +53,7 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
 
                 value = when (member.returnType) {
                     Date::class.createType(),
+                    Date::class.createType(nullable = true),
                     Date::class.javaObjectType -> format.parse(str)
 
                     Calendar::class.createType(),
@@ -61,12 +63,14 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
 
                     // "yyyyMMdd" -> Int
                     Int::class.createType(),
+                    Int::class.createType(nullable = true),
                     Int::class.javaPrimitiveType,
                     Int::class.javaObjectType
                     -> str.toIntOrNull()
 
                     // "yyyyMMddhhmmss" -> Timestap(Long)
                     Long::class.createType(),
+                    Long::class.createType(nullable = true),
                     Long::class.javaPrimitiveType,
                     Long::class.javaObjectType
                     -> format.parse(str).time
@@ -81,6 +85,7 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
 
                 value = when (member.returnType) {
                     Date::class.createType(),
+                    Date::class.createType(nullable = true),
                     Date::class.javaObjectType -> Date().apply { time = stamp }
 
                     Calendar::class.createType(),
@@ -96,6 +101,7 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
                     }
 
                     String::class.createType(),
+                    String::class.createType(nullable = true),
                     String::class.javaObjectType
                     -> stamp.toString()
 
@@ -189,20 +195,26 @@ fun getKeyFields(rowDef: Any): List<Column> {
 fun getDBColumnType(member: KProperty1<out Any, Any?>): String {
     return when (member.returnType) {
         Int::class.createType(),
+        Int::class.createType(nullable = true),
         Int::class.javaPrimitiveType,
         Long::class.createType(),
+        Long::class.createType(nullable = true),
         Long::class.javaPrimitiveType,
         Boolean::class.createType(),
+        Boolean::class.createType(nullable = true),
         Boolean::class.javaPrimitiveType
         -> "INTEGER"
 
         Float::class.createType(),
+        Float::class.createType(nullable = true),
         Float::class.javaPrimitiveType,
         Double::class.createType(),
+        Double::class.createType(nullable = true),
         Double::class.javaPrimitiveType
         -> "REAL"
 
         String::class.createType(),
+        String::class.createType(nullable = true),
         String::class.javaPrimitiveType
         -> "TEXT"
 
