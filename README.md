@@ -437,6 +437,14 @@ db.from(Anime()).selectForEachCursor { cursor ->
 }
 ```
 
+## Cursorからオブジェクトを作成する
+```kotlin
+db.from(Anime()).selectForEachCursor { cursor ->
+    val obj = convertFromCursor(cursor) { Anime() }
+    // . . .
+}
+```
+
 ## Where
 WHERE句で条件をANDでつなげる事がよくある。この場合`whereAnd()`メソッドが使える。
 ```kotlin
