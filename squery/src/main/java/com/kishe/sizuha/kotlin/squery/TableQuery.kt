@@ -101,12 +101,12 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
     }
 
     fun groupBy(field: String): TableQuery {
-        pushOrderBy(field)
+        pushGroupBy(field)
         return this
     }
 
     fun groupByRaw(groupBy: String): TableQuery {
-        setOrderBy(groupBy)
+        setGroupBy(groupBy)
         return this
     }
 

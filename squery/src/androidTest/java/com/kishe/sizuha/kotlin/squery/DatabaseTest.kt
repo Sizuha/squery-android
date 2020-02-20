@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
+import android.util.Log
 import org.junit.runner.RunWith
 
 import org.junit.Assert.*
@@ -59,6 +60,7 @@ class DatabaseTest {
     private val dateTimeFmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
     private fun openDB(): SQuery {
+        Config.enableDebugLog = true
         return SampleDB(getContext(), "test-users.db", 1)
     }
 
@@ -218,6 +220,21 @@ class DatabaseTest {
 
         }
 
+        releaseDB()
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun havingTest() {
+        openDB().use { db ->
+            db.from(User.tableName).create(User())
+            val sqlStr = db.from(User.tableName)
+                    .groupBy("l_name")
+                    .having("1=1")
+                    .makeQueryString(false, mutableListOf())
+
+            assert(sqlStr.equals("SELECT * FROM user  GROUP BY `l_name`  HAVING 1=1"))
+        }
         releaseDB()
     }
 

@@ -136,7 +136,9 @@ abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val ta
             sql.append(" LIMIT $sqlLimitOffset,$sqlLimit")
         }
 
-        return sql.toString()
+        val sqlStr = sql.toString()
+        printLog(sqlStr)
+        return sqlStr
     }
 
     protected fun makeOrderByString(): String {
