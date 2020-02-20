@@ -145,17 +145,17 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
 
     //------- SELECT -------//
 
-    fun <R: ISQueryRow> select(factory: ()->R): MutableList<R> {
+    fun <R: Any> select(factory: ()->R): MutableList<R> {
         return selectWithCursor { cur -> convertFromCursor(cur, factory) }
     }
 
-    fun <R: ISQueryRow> selectOne(factory: ()->R): R? {
+    fun <R: Any> selectOne(factory: ()->R): R? {
         setLimit(1)
         select(factory).forEach { row -> return row }
         return null
     }
 
-    inline fun <R: ISQueryRow> selectForEach(noinline factory: ()->R, crossinline each: (row: R)->Unit) {
+    inline fun <R: Any> selectForEach(noinline factory: ()->R, crossinline each: (row: R)->Unit) {
         selectForEachCursor {
             val row = convertFromCursor(it, factory)
             each(row)
