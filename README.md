@@ -395,6 +395,18 @@ val cursor = db.from(Anime.tableName).columns("title","progress","total").where(
 val cursor = db.from(Anime.tableName).where("fin=?",0).selectAsCursor("title","progress","total")
 ```
 
+### Cursorからオブジェクトを作成する
+```kotlin
+val cursor = db.from(Anime.tableName).where("fin=?",0).selectAsCursor()
+cursor.use {
+    cursor.moveFirst()
+    do {
+        val obj = convertFromCursor(cursor) { Anime() }
+        // . . .
+    } while(cursor.moveNext())    
+}
+```
+
 ### 手動でCursorからオブジェクトに変換
 ```kotlin
 // SQL> SELECT title, progress, total FROM anime WHERE fin=0;
@@ -434,14 +446,6 @@ db.from(Anime()).selectForEachCursor { cursor ->
     cursor.run {
     // . . .
     }
-}
-```
-
-## Cursorからオブジェクトを作成する
-```kotlin
-db.from(Anime()).selectForEachCursor { cursor ->
-    val obj = convertFromCursor(cursor) { Anime() }
-    // . . .
 }
 ```
 
