@@ -38,12 +38,14 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
 
                 if (isSinglePk && pk != null) {
                     sql.append(" PRIMARY KEY")
+
+//                    if (!pk.asc) {
+//                        sql.append(" DESC")
+//                    }
+
                     if (isAutoInc) {
                         sql.append(" AUTOINCREMENT")
                     }
-//                    else {
-//                        if (!col.orderByAsc) sql.append(" DESC")
-//                    }
                 }
                 else {
                     if (col.notNull) {
@@ -65,6 +67,9 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
             for (p in pks) {
                 if (isFirstCol) isFirstCol = false else sql.append(",")
                 sql.append(p.name)
+
+
+
 //                if (!p.orderByAsc) sql.append(" DESC")
             }
 
@@ -172,7 +177,7 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
 
         for (member in row::class.memberProperties) {
             val column = member.findAnnotation<Column>() ?: continue
-            if (column.exclude) continue
+            if (column.manually) continue
 
             val accessible = member.isAccessible
             member.isAccessible = true

@@ -35,7 +35,7 @@ fun <R: Any> convertFromCursor(cursor: Cursor, factory: ()->R): R {
 
 private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*>, cursor: Cursor) {
     val column = member.findAnnotation<Column>()
-    if (column?.exclude == true) return
+    if (column?.manually == true) return
 
     var value: Any? = null
 

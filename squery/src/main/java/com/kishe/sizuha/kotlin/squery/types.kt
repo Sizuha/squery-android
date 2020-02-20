@@ -5,11 +5,11 @@ annotation class Column(
         val name: String,
         val notNull: Boolean = false,
         val unique: Boolean = false,
-        val exclude: Boolean = false
+        val manually: Boolean = false
 )
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
-annotation class PrimaryKey(val seq: Int = 1, val autoInc: Boolean = false)
+annotation class PrimaryKey(val seq: Int = 1, val autoInc: Boolean = false/*, val asc: Boolean = true*/)
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
 annotation class DateType(
