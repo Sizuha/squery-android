@@ -269,15 +269,15 @@ db..createTable(Anime(), true)
 ```kotlin
 // SQL> DROP TABLE anime;
 db.from(Anime.tableName).drop()
-db.from<Anime>().drop() // v1.1.6から
+db.from<Anime>().drop() // v1.1.16から
 
 // SQL> DELETE FROM anime;
 db.from(Anime.tableName).delete()
-db.from<Anime>().delete() // v1.1.6から
+db.from<Anime>().delete() // v1.1.16から
 
 // SQL> DELETE FROM anime WHERE start_date < 200001;
 db.from(Anime.tableName).where("start_date < ?", 200001).delete()
-db.from<Anime>().where("start_date < ?", 200001).delete() // v1.1.6から
+db.from<Anime>().where("start_date < ?", 200001).delete() // v1.1.16から
 ```
 
 ## Insert
