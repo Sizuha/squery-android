@@ -24,6 +24,7 @@ class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context,
 
 }
 
+@Table("user")
 class User : ISQueryRow {
     companion object {
         val tableName = "user"
@@ -87,10 +88,10 @@ class DatabaseTest {
     @Throws(Exception::class)
     private fun createTableAndInsert() {
         openDB().use { db ->
-            db.from(User.tableName).drop()
-            db.createTable(User.tableName, User())
+            db.from<User>().drop()
+            db.createTable(User())
 
-            val result = db.from(User.tableName).insert(User().apply {
+            val result = db.from<User>().insert(User().apply {
                 lastName = "Numakura"
                 firstName = "Manami"
                 birth = 19780415
@@ -227,8 +228,8 @@ class DatabaseTest {
     @Throws(Exception::class)
     fun havingTest() {
         openDB().use { db ->
-            db.from(User.tableName).create(User())
-            val sqlStr = db.from(User.tableName)
+            db.createTable(User())
+            val sqlStr = db.from<User>()
                     .groupBy("l_name")
                     .having("1=1")
                     .makeQueryString(false, mutableListOf())
