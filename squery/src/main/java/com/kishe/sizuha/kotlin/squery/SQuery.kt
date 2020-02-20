@@ -20,8 +20,22 @@ open class SQuery(context: Context, dbName: String, version: Int)
         return TableQuery(if (writable) writableDatabase else readableDatabase, table)
     }
 
-    fun createTable(tableName: String, tableDef: Any) {
-        from(tableName).create(tableDef)
+    inline fun<reified T: Any> from(writable: Boolean = true): TableQuery {
+        var tableName: String? = null
+        val tableClass = T::class.java
+
+        tableClass.annotations.forEach { anno ->
+            if (anno is Table) {
+                tableName = anno.name
+                return@forEach
+            }
+        }
+
+        return from(tableName!!, writable)
+    }
+
+    inline fun<reified T: Any> createTable(tableDef: T, ifNotExists: Boolean = true) {
+        from<T>().create(tableDef, ifNotExists)
     }
 
     fun rawQuery(sql: String, args: Array<out String>): Cursor? {

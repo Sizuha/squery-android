@@ -1,5 +1,8 @@
 package com.kishe.sizuha.kotlin.squery
 
+@Target(AnnotationTarget.CLASS)
+annotation class Table(val name: String)
+
 @Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
 annotation class Column(
         val name: String,
