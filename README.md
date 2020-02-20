@@ -69,8 +69,9 @@ var fieldVar: kotlinDataType
 
 例)
 ```kotlin
+@Table("sample") // v1.1.16以上ではテーブル名をアノテーションで指定できる
 class SampleTable {    
-    // DB上のテーブル名
+    // DB上のテーブル名: v1.0.15以下の場合
     companion object {
         val tableName = "sample"
     }
@@ -178,8 +179,9 @@ CREATE TABLE anime (
 );
 ```
 ```kotlin
+@Table("anime") // v1.1.16以上の場合
 class Anime() {
-    companion object { val tableName = "anime" }
+    companion object { val tableName = "anime" } // v1.0.15以下の場合
 
     @Column("idx")
     @PrimaryKey(autoInc = true)
@@ -256,19 +258,26 @@ SQueryは単純なケースのQueryをなるべく自動かするのが目標な
 ```kotlin
 val db = SQuery(this, "anime.db", DB_VER /* 1 */ )
 
+// v1.0.15以下
 db.from(Anime.tableName).create(Anime(), true) // true = IF NOT EXISTS
+
+// v1.1.16から
+db..createTable(Anime(), true)
 ```
 
 ## Delete
 ```kotlin
 // SQL> DROP TABLE anime;
 db.from(Anime.tableName).drop()
+db.from<Anime>().drop() // v1.1.6から
 
 // SQL> DELETE FROM anime;
 db.from(Anime.tableName).delete()
+db.from<Anime>().delete() // v1.1.6から
 
 // SQL> DELETE FROM anime WHERE start_date < 200001;
 db.from(Anime.tableName).where("start_date < ?", 200001).delete()
+db.from<Anime>().where("start_date < ?", 200001).delete() // v1.1.6から
 ```
 
 ## Insert
@@ -283,7 +292,7 @@ val row = Anime().apply {
     startDate = 20181001
 }
 // AUTOINCREMENTのフィルドは自動で外される。
-db.from(Anime.tableName).insert(row)
+db.from<Anime>().insert(row)
 
 // 又は
 val data = ContentValues().apply { 
@@ -292,7 +301,7 @@ val data = ContentValues().apply {
     put("fin", false)
     // . . .
 }
-db.from(Anime.tableName).insert(data)
+db.from<Anime>().insert(data)
 ```
 
 ## Update
@@ -303,13 +312,13 @@ db.from(Anime.tableName).insert(data)
 val row = Anime().apply { 
     // . . .
 }
-db.from(Anime.tableName).update(row)
+db.from<Anime>().update(row)
 
 // 又は
 val data = ContentValues().apply { 
     // . . .
 }
-db.from(Anime.tableName).update(data)
+db.from<Anime>().update(data)
 ```
 where()を省略した場合、自動でWHERE句が追加される。この場合、主キー(Primary Key)を使ってWHERE句を作成する。
 自動でWHERE句を作成したくない場合は、`update(false)`のように使える。
@@ -323,10 +332,10 @@ where()を省略した場合、自動でWHERE句が追加される。この場�
 val row = Anime().apply { 
     // . . .
 }
-db.from(Anime.tableName).where("idx=?", row.idx).insertOrUpdate(row)
+db.from<Anime>().where("idx=?", row.idx).insertOrUpdate(row)
 
 // 又は (WHERE句を自動で作成する)
-db.from(Anime.tableName).insertOrUpdate(row)
+db.from<Anime>().insertOrUpdate(row)
 ```
 
 ## Update or Insert
@@ -335,22 +344,22 @@ db.from(Anime.tableName).insertOrUpdate(row)
 val row = Anime().apply { 
     // . . .
 }
-db.from(Anime.tableName).where("idx=?", row.idx).updateOrInsert(row)
+db.from<Anime>().where("idx=?", row.idx).updateOrInsert(row)
 
 // 又は (WHERE句を自動で作成する)
-db.from(Anime.tableName).insertOrUpdate(row)
+db.from<Anime>().insertOrUpdate(row)
 ```
 
 ## Select
 ```kotlin
 // SQL> SELECT * FROM anime;
-val rows = db.from(Anime.tableName).select { Anime() } // return: MutableList<Anime>
+val rows = db.from<Anime>().select { Anime() } // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1;
-val rows = db.from(Anime.tableName).where("fin=?",1).select { Anime()} // return: MutableList<Anime>
+val rows = db.from<Anime>().where("fin=?",1).select { Anime()} // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE fin=1 ORDER BY start_date DESC, title LIMIT 0,10;
-val rows = db.from(Anime.tableName)
+val rows = db.from<Anime>()
     .where("fin=?",1)
     .orderBy("start_date", false)
     .orderBy("title")
@@ -358,12 +367,12 @@ val rows = db.from(Anime.tableName)
     .select { Anime() } // return: MutableList<Anime>
 
 // SQL> SELECT * FROM anime WHERE idx=100 LIMIT 1;
-val rows = db.from(Anime.tableName)
+val rows = db.from<Anime>()
     .where("idx=?",100)
     .limit(1)
     .select { Anime() } // return: MutableList<Anime>
 // 又は
-val row = db.from(Anime.tableName).where("idx=?",100).selectOne { Anime() } // return: Anime or null
+val row = db.from<Anime>().where("idx=?",100).selectOne { Anime() } // return: Anime or null
 
 // SQL> SELECT title FROM anime WHERE start_date < 200001;
 class AnimeTitle() {
@@ -372,7 +381,7 @@ class AnimeTitle() {
     @Column("title", notNull=true)
     var title: String
 }
-val rows = db.from(AnimeTitle.tableName)
+val rows = db.from<Anime>()
     .columns("title")
     .where("start_date < ?", 200001)
     .select { AnimeTitle() }
@@ -384,20 +393,20 @@ JOIN機能はまだテスト中。
 ### 結果をCursorで返す
 ```kotlin
 // SQL> SELECT * FROM anime WHERE fin=0;
-val cursor = db.from(Anime.tableName).where("fin=?",0).selectAsCursor() // return: Cursor
+val cursor = db.from<Anime>().where("fin=?",0).selectAsCursor() // return: Cursor
 cursor.use {
 // . . .
 }
 
 // SQL> SELECT title, progress, total FROM anime WHERE fin=0;
-val cursor = db.from(Anime.tableName).columns("title","progress","total").where("fin=?",0).selectAsCursor()
+val cursor = db.from<Anime>().columns("title","progress","total").where("fin=?",0).selectAsCursor()
 // 又は
-val cursor = db.from(Anime.tableName).where("fin=?",0).selectAsCursor("title","progress","total")
+val cursor = db.from<Anime>().where("fin=?",0).selectAsCursor("title","progress","total")
 ```
 
 ### Cursorからオブジェクトを作成する
 ```kotlin
-val cursor = db.from(Anime.tableName).where("fin=?",0).selectAsCursor()
+val cursor = db.from<Anime>().where("fin=?",0).selectAsCursor()
 cursor.use {
     cursor.moveFirst()
     do {
@@ -410,7 +419,7 @@ cursor.use {
 ### 手動でCursorからオブジェクトに変換
 ```kotlin
 // SQL> SELECT title, progress, total FROM anime WHERE fin=0;
-val rows = db.from(Anime.tableName)
+val rows = db.from<Anime>()
     .columns("title","progress","total")
     .where("fin=?",0)
     .selectWithCursor { cursor -> 
@@ -435,14 +444,14 @@ val rows = db.from(Anime.tableName)
 ### ForEach
 ```kotlin
 // SQL> SELECT * FROM anime;
-db.from(Anime.tableName).selectForEach({ Anime() }) { row -> // row: Anime
+db.from<Anime>().selectForEach({ Anime() }) { row -> // row: Anime
     row.run {
     // . . .
     }
 }
 
 // 又は
-db.from(Anime()).selectForEachCursor { cursor ->
+db.from<Anime>().selectForEachCursor { cursor ->
     cursor.run {
     // . . .
     }
@@ -453,13 +462,13 @@ db.from(Anime()).selectForEachCursor { cursor ->
 WHERE句で条件をANDでつなげる事がよくある。この場合`whereAnd()`メソッドが使える。
 ```kotlin
 // SQL> SELECT * FROM anime WHERE (fin=0) AND (media=1) AND (start_date>200000);
-val rows = db.from(Anime.tableName)
+val rows = db.from<Anime>()
     .where("fin=?", 0)
     .whereAnd("media=?", 1)
     .whereAnd("start_date>?", 200000)
     .select { Anime() }
 // 又は    
-val rows = db.from(Anime.tableName)
+val rows = db.from<Anime>()
     .whereAnd("fin=?", 0)
     .whereAnd("media=?", 1)
     .whereAnd("start_date>?", 200000)
@@ -468,10 +477,8 @@ val rows = db.from(Anime.tableName)
 
 ## 「読み込み・書き込み」をカスタマイズ
 ```kotlin
+@Table("anime") // v1.1.16から
 class Anime() : ISQueryRow {
-    companion object { val tableName = "anime" }
-
-    // ...省略...
     
     // manually=trueのフィルドは、DBから自動でデータの読み込みや書き込みを行わない
     @Column("rating", manually=true) 
