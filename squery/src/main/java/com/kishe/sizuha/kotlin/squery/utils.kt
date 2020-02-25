@@ -113,31 +113,37 @@ private fun setToProperty(colIdx: Int, tableObj: Any, member: KMutableProperty<*
 
         value = value ?: when (member.returnType) {
             Int::class.createType(),
+            Int::class.createType(nullable = true),
             Int::class.javaPrimitiveType,
             Int::class.javaObjectType
             -> cursor.getInt(colIdx)
 
             Boolean::class.createType(),
+            Boolean::class.createType(nullable = true),
             Boolean::class.javaPrimitiveType,
             Boolean::class.javaObjectType
             -> cursor.getInt(colIdx) != 0
 
             Long::class.createType(),
+            Long::class.createType(nullable = true),
             Long::class.javaPrimitiveType,
             Long::class.javaObjectType
             -> cursor.getLong(colIdx)
 
             Float::class.createType(),
+            Float::class.createType(nullable = true),
             Float::class.javaPrimitiveType,
             Float::class.javaObjectType
             -> cursor.getFloat(colIdx)
 
             Double::class.createType(),
+            Double::class.createType(nullable = true),
             Double::class.javaPrimitiveType,
             Double::class.javaObjectType
             -> cursor.getDouble(colIdx)
 
-            ByteArray::class.createType()
+            ByteArray::class.createType(),
+            ByteArray::class.createType(nullable = true)
             -> return
 
             else -> cursor.getString(colIdx) ?: ""
