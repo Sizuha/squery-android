@@ -38,7 +38,14 @@ SQLiteOpenHelperクラスみたいに、SQueryクラスをオーバーライド�
 class SampleDB(context: Context, dbName: String, version: Int) : SQuery(context, dbName, version) {
     override fun onCreate(db: SQLiteDatabase?) {
         super.onCreate(db)
-        // TODO ...
+        
+        // 注意！
+        // onCreate()とonUpgrade()の中では「from()」メソッドは使えない！
+        
+        TableQuery(db!!, "TABLE_NAME").create( TABLE_CLASS(), /* ifNotExists */ true )
+        
+        // v1.1.18以後
+        createTable(db!!, TABLE_CLASS(), /* ifNotExists */ true)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
