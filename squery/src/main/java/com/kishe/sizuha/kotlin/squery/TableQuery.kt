@@ -12,6 +12,12 @@ import kotlin.reflect.jvm.isAccessible
 
 class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tableName) {
 
+    companion object {
+        inline fun<reified T: Any> from(db: SQLiteDatabase): TableQuery {
+            return TableQuery(db, getTableName<T>()!!)
+        }
+    }
+
     fun reset(): TableQuery {
         super.clear()
         return this

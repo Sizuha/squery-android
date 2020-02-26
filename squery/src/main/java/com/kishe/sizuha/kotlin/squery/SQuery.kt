@@ -21,17 +21,13 @@ open class SQuery(context: Context, dbName: String, version: Int)
     }
 
     inline fun<reified T: Any> from(writable: Boolean = true): TableQuery {
-        var tableName: String? = null
-        val tableClass = T::class.java
-
-        tableClass.annotations.forEach { anno ->
-            if (anno is Table) {
-                tableName = anno.name
-                return@forEach
-            }
-        }
-
+        val tableName: String? = getTableName<T>()
         return from(tableName!!, writable)
+    }
+
+    inline fun<reified T: Any> createTable(db: SQLiteDatabase, tableDef: T, ifNotExists: Boolean = true) {
+        val tableName: String? = getTableName<T>()
+        TableQuery(db, tableName!!).create(tableDef, ifNotExists)
     }
 
     inline fun<reified T: Any> createTable(tableDef: T, ifNotExists: Boolean = true) {

@@ -239,3 +239,17 @@ fun convertToCommaString(source: Iterable<String>, withFieldQuote: Boolean = fal
 
     return buff.toString()
 }
+
+inline fun<reified T: Any> getTableName(): String? {
+    var tableName: String? = null
+    val tableClass = T::class.java
+
+    tableClass.annotations.forEach { anno ->
+        if (anno is Table) {
+            tableName = anno.name
+            return@forEach
+        }
+    }
+
+    return tableName
+}
