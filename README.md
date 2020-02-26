@@ -383,12 +383,10 @@ val row = db.from<Anime>().where("idx=?",100).selectOne { Anime() } // return: A
 
 // SQL> SELECT title FROM anime WHERE start_date < 200001;
 class AnimeTitle() {
-    companion object { val tableName = "anime" }
-    
     @Column("title", notNull=true)
     var title: String
 }
-val rows = db.from<Anime>()
+val rows = db.from("anime")
     .columns("title")
     .where("start_date < ?", 200001)
     .select { AnimeTitle() }
