@@ -180,7 +180,8 @@ abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val ta
     protected fun setWhere(whereCond: String, vararg args: Any) {
         sqlWhere.clear()
         sqlWhere.append("($whereCond)")
-        for (a in args) { sqlWhereArgs.add(a.toString()) }
+
+        if (args.isNotEmpty())  for (a in args) { sqlWhereArgs.add(a.toString()) }
     }
 
     protected fun setWhereWithList(whereCond: String, args: List<Any>) {
@@ -192,7 +193,8 @@ abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val ta
     protected fun pushWhereAnd(whereCond: String, vararg args: Any) {
         if (sqlWhere.isNotEmpty()) sqlWhere.append(" AND ")
         sqlWhere.append("($whereCond)")
-        for (a in args) { sqlWhereArgs.add(a.toString()) }
+
+        if (args.isNotEmpty()) for (a in args) { sqlWhereArgs.add(a.toString()) }
     }
 
     protected fun pushOrderBy(field: String, asc: Boolean = true) {

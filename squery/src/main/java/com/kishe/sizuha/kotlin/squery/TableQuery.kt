@@ -97,7 +97,7 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
     }
 
     fun whereAnd(whereCond: String, vararg args: Any): TableQuery {
-        pushWhereAnd(whereCond, args)
+        pushWhereAnd(whereCond, *args)
         return this
     }
 
