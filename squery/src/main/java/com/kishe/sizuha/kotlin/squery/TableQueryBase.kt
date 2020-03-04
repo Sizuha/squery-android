@@ -181,7 +181,7 @@ abstract class TableQueryBase(protected val db: SQLiteDatabase, protected val ta
         sqlWhere.clear()
         sqlWhere.append("($whereCond)")
 
-        if (args.isNotEmpty())  for (a in args) { sqlWhereArgs.add(a.toString()) }
+        if (args.isNotEmpty()) for (a in args) { sqlWhereArgs.add(a.toString()) }
     }
 
     protected fun setWhereWithList(whereCond: String, args: List<Any>) {

@@ -74,8 +74,6 @@ class TableQuery(db: SQLiteDatabase, tableName: String) : TableQueryBase(db, tab
                 if (isFirstCol) isFirstCol = false else sql.append(",")
                 sql.append(p.name)
 
-
-
 //                if (!p.orderByAsc) sql.append(" DESC")
             }
 
