@@ -1,12 +1,6 @@
 # SQuery for Android(Kotlin)
 Simple Query Library for SQLite (Android/Kotlin)
 
-開発中...
-Now Developing
-
-* 注意：開発中のライブラリーなので、まだ充分なテストができていません。
-
-
 ## build.gradle (App)
 ~~~
 dependencies {
